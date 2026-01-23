@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { sendPasswordResetOTP } = require('../services/emailService');
 const otpGenerator = require('otp-generator');
+const { validatePassword, getPasswordErrorMessage } = require('../utils/passwordValidator');
 
 
 exports.registerUser = async (req, res) => {
@@ -18,6 +19,16 @@ exports.registerUser = async (req, res) => {
     }
 
     try {
+        // Validate password strength
+        const passwordValidation = validatePassword(password);
+        if (!passwordValidation.isValid) {
+            return res.status(400).json({
+                success: false,
+                message: getPasswordErrorMessage(passwordValidation),
+                requirements: passwordValidation.requirements
+            });
+        }
+
         // Check for existing email or number
         const existingUser = await User.findOne({
             $or: [{ email }, { number }]
@@ -63,7 +74,7 @@ exports.registerUser = async (req, res) => {
 
 exports.loginUser = async (req, res) => {
     console.log(req.body);
-    
+
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -125,7 +136,7 @@ exports.loginUser = async (req, res) => {
 
 exports.getMyBidHistory = async (req, res) => {
     console.log(req.body);
-    
+
     try {
         const userId = req.user.id;
         const roomsBiddedOn = await BiddingRoom.find({ 'bids.bidder': userId })
@@ -198,6 +209,16 @@ exports.resetPassword = async (req, res) => {
     }
 
     try {
+        // Validate new password strength
+        const passwordValidation = validatePassword(newPassword);
+        if (!passwordValidation.isValid) {
+            return res.status(400).json({
+                success: false,
+                message: getPasswordErrorMessage(passwordValidation),
+                requirements: passwordValidation.requirements
+            });
+        }
+
         // Find the user by email, ensuring the OTP is correct and not expired
         const user = await User.findOne({
             email: email,
@@ -236,7 +257,7 @@ exports.getMe = async (req, res) => {
         // Since req.user is already the user object from the database, we can return it directly.
         // We just need to ensure we don't send the password.
         const user = req.user;
-        
+
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found.' });
         }

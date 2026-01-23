@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosConfig';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 
 const ResetPasswordPage = () => {
     const navigate = useNavigate();
@@ -29,6 +30,21 @@ const ResetPasswordPage = () => {
         setLoading(true);
         setError('');
         setMessage('');
+
+        // Validate password complexity on client side
+        if (newPassword.length < 8) {
+            setError('Password must be at least 8 characters long.');
+            setLoading(false);
+            return;
+        }
+
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]).{8,}$/;
+        if (!passwordRegex.test(newPassword)) {
+            setError('Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special symbol.');
+            setLoading(false);
+            return;
+        }
+
         try {
             const response = await api.post('/auth/reset-password', { otp, email, newPassword });
             setMessage(response.data.message + " Redirecting to login...");
@@ -58,7 +74,17 @@ const ResetPasswordPage = () => {
                     </div>
                     <div>
                         <label htmlFor="newPassword" className="block text-sm font-semibold text-gray-700">New Password</label>
-                        <input type="password" id="newPassword" value={newPassword} minLength="6" onChange={(e) => setNewPassword(e.target.value)} className="mt-1 w-full px-4 py-3 bg-neutral-light border rounded-lg" required />
+                        <input
+                            type="password"
+                            id="newPassword"
+                            value={newPassword}
+                            minLength="8"
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="Password (min. 8 characters)"
+                            className="mt-1 w-full px-4 py-3 bg-neutral-light border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                            required
+                        />
+                        <PasswordStrengthIndicator password={newPassword} />
                     </div>
                     <button type="submit" disabled={loading} className="w-full py-3 font-semibold text-white bg-primary rounded-lg hover:bg-primary-dark disabled:bg-gray-400">
                         {loading ? 'Resetting...' : 'Reset Password'}
