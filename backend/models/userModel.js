@@ -7,10 +7,25 @@ const UserSchema = new mongoose.Schema(
         firstName: { type: String, required: true },
         lastName: { type: String, required: true },
         password: { type: String, required: true },
-        
+
         passwordResetOTP: { type: String },
         passwordResetExpires: { type: Date },
 
+        // Password history tracking for reuse prevention
+        passwordHistory: [{
+            hash: { type: String, required: true },
+            changedAt: { type: Date, default: Date.now }
+        }],
+
+        // Password expiration tracking
+        passwordChangedAt: {
+            type: Date,
+            default: Date.now
+        },
+        passwordExpiresAt: {
+            type: Date,
+            index: true
+        },
 
         number: {
             type: String,
@@ -26,5 +41,17 @@ const UserSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+// Pre-save hook to automatically calculate passwordExpiresAt
+UserSchema.pre('save', function (next) {
+    // Only calculate expiry if password or passwordChangedAt is modified
+    if (this.isModified('password') || this.isModified('passwordChangedAt')) {
+        const PASSWORD_EXPIRY_DAYS = 90;
+        this.passwordExpiresAt = new Date(
+            (this.passwordChangedAt || Date.now()) + PASSWORD_EXPIRY_DAYS * 24 * 60 * 60 * 1000
+        );
+    }
+    next();
+});
 
 module.exports = mongoose.model("User", UserSchema);

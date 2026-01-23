@@ -4,7 +4,9 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { sendPasswordResetOTP } = require('../services/emailService');
 const otpGenerator = require('otp-generator');
-const { validatePassword, getPasswordErrorMessage } = require('../utils/passwordValidator');
+const { validatePassword, getPasswordErrorMessage, validatePasswordReuse } = require('../utils/passwordValidator');
+const { isPasswordExpired, getDaysUntilExpiration, shouldWarnExpiration, updatePasswordExpiry } = require('../utils/passwordExpiry');
+const { PASSWORD_HISTORY_LIMIT } = require('../config/passwordConfig');
 
 
 exports.registerUser = async (req, res) => {
@@ -48,7 +50,9 @@ exports.registerUser = async (req, res) => {
             firstName,
             lastName,
             password: hashedPassword,
-            number
+            number,
+            passwordChangedAt: new Date(),
+            passwordHistory: [] // Start with empty history
         });
 
         await newUser.save();
@@ -102,6 +106,15 @@ exports.loginUser = async (req, res) => {
             });
         }
 
+        // Check if password has expired
+        if (isPasswordExpired(user)) {
+            return res.status(403).json({
+                success: false,
+                message: "Password has expired. Please reset your password.",
+                passwordExpired: true
+            });
+        }
+
         // 5. The JWT payload no longer contains 'username'
         const token = jwt.sign(
             {
@@ -112,8 +125,8 @@ exports.loginUser = async (req, res) => {
             process.env.JWT_SECRET, { expiresIn: "7d" }
         );
 
-        // 6. The returned user object no longer contains 'username'
-        return res.status(200).json({
+        // Prepare response with expiry warning if needed
+        const response = {
             success: true,
             token,
             user: {
@@ -125,7 +138,18 @@ exports.loginUser = async (req, res) => {
                 role: user.role,
                 wallet: user.wallet
             },
-        });
+        };
+
+        // Add password expiry warning if approaching expiration
+        if (shouldWarnExpiration(user)) {
+            const daysRemaining = getDaysUntilExpiration(user);
+            response.passwordExpiryWarning = {
+                daysRemaining,
+                message: `Your password expires in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}. Please update soon.`
+            };
+        }
+
+        return res.status(200).json(response);
 
     } catch (error) {
         console.error("Login Error:", error);
@@ -230,9 +254,34 @@ exports.resetPassword = async (req, res) => {
             return res.status(400).json({ success: false, message: 'OTP is invalid or has expired. Please try again.' });
         }
 
+        // Validate password reuse
+        const reuseValidation = await validatePasswordReuse(newPassword, user.passwordHistory);
+        if (!reuseValidation.isValid) {
+            return res.status(400).json({
+                success: false,
+                message: reuseValidation.message
+            });
+        }
+
         // Hash the new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Add current password to history before updating
+        if (!user.passwordHistory) {
+            user.passwordHistory = [];
+        }
+        user.passwordHistory.push({
+            hash: user.password,
+            changedAt: user.passwordChangedAt || new Date()
+        });
+
+        // Keep only last PASSWORD_HISTORY_LIMIT entries
+        if (user.passwordHistory.length > PASSWORD_HISTORY_LIMIT) {
+            user.passwordHistory = user.passwordHistory.slice(-PASSWORD_HISTORY_LIMIT);
+        }
+
         user.password = hashedPassword;
+        updatePasswordExpiry(user);
 
         // Clear the OTP fields to prevent reuse
         user.passwordResetOTP = undefined;
@@ -262,13 +311,109 @@ exports.getMe = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found.' });
         }
 
-        res.status(200).json({
+        const response = {
             success: true,
             user: user
-        });
+        };
+
+        // Add password expiry warning if approaching expiration
+        if (shouldWarnExpiration(user)) {
+            const daysRemaining = getDaysUntilExpiration(user);
+            response.passwordExpiryWarning = {
+                daysRemaining,
+                message: `Your password expires in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}. Please update soon.`
+            };
+        }
+
+        res.status(200).json(response);
 
     } catch (error) {
         console.error("Error in getMe controller:", error);
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+
+/**
+ * Change Password for Authenticated Users
+ * Allows users to change their password while logged in
+ */
+exports.changePassword = async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+            success: false,
+            message: 'Please provide both current and new password.'
+        });
+    }
+
+    try {
+        // Find user with password field
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        // Verify current password
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Current password is incorrect.'
+            });
+        }
+
+        // Validate new password strength
+        const passwordValidation = validatePassword(newPassword);
+        if (!passwordValidation.isValid) {
+            return res.status(400).json({
+                success: false,
+                message: getPasswordErrorMessage(passwordValidation),
+                requirements: passwordValidation.requirements
+            });
+        }
+
+        // Validate password reuse
+        const reuseValidation = await validatePasswordReuse(newPassword, user.passwordHistory);
+        if (!reuseValidation.isValid) {
+            return res.status(400).json({
+                success: false,
+                message: reuseValidation.message
+            });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Add current password to history
+        if (!user.passwordHistory) {
+            user.passwordHistory = [];
+        }
+        user.passwordHistory.push({
+            hash: user.password,
+            changedAt: user.passwordChangedAt || new Date()
+        });
+
+        // Keep only last PASSWORD_HISTORY_LIMIT entries
+        if (user.passwordHistory.length > PASSWORD_HISTORY_LIMIT) {
+            user.passwordHistory = user.passwordHistory.slice(-PASSWORD_HISTORY_LIMIT);
+        }
+
+        // Update password and expiry
+        user.password = hashedPassword;
+        updatePasswordExpiry(user);
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Password changed successfully.'
+        });
+
+    } catch (error) {
+        console.error("Change password error:", error);
+        res.status(500).json({ success: false, message: 'Server error while changing password.' });
     }
 };

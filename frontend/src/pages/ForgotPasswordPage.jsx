@@ -1,15 +1,19 @@
 // File: frontend/src/pages/ForgotPasswordPage.jsx
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosConfig';
 
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Get expiry message from location state if present
+    const expiryMessage = location.state?.message;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -40,23 +44,24 @@ const ForgotPasswordPage = () => {
                     <p className="text-neutral-dark mt-2">Enter your email address and we'll send you an OTP to reset your password.</p>
                 </div>
 
+                {expiryMessage && <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md"><p>{expiryMessage}</p></div>}
                 {message && <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md"><p>{message}</p></div>}
                 {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md"><p>{error}</p></div>}
-                
+
                 <form className="space-y-6" onSubmit={handleSubmit}>
                     <div>
                         <label htmlFor="email" className="block text-sm font-semibold text-gray-700">Email Address</label>
-                        <input 
-                            type="email" 
+                        <input
+                            type="email"
                             id="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="mt-1 w-full px-4 py-3 bg-neutral-light border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" 
-                            required 
+                            className="mt-1 w-full px-4 py-3 bg-neutral-light border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                            required
                         />
                     </div>
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         disabled={loading}
                         className="w-full py-3 font-semibold text-white bg-primary rounded-lg hover:bg-primary-dark transition-all disabled:bg-gray-400"
                     >

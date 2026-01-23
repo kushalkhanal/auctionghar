@@ -15,6 +15,7 @@ import CreateListingPage from '../pages/CreateListingPage.jsx';
 
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
+import ChangePasswordPage from '../pages/ChangePasswordPage';
 
 
 
@@ -36,7 +37,7 @@ const AppRouter = () => (
             <Route path="/" element={<Homepage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            
+
             {/* Protected Routes - Require Authentication */}
             <Route path="/profile/bids" element={
                 <ProtectedRoute>
@@ -66,6 +67,11 @@ const AppRouter = () => (
             <Route path="/create-listing" element={
                 <ProtectedRoute>
                     <CreateListingPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/change-password" element={
+                <ProtectedRoute>
+                    <ChangePasswordPage />
                 </ProtectedRoute>
             } />
 

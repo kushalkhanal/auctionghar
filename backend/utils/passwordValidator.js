@@ -76,7 +76,35 @@ const getPasswordErrorMessage = (validationResult) => {
     return validationResult.errors.join('. ') + '.';
 };
 
+/**
+ * Validates that new password hasn't been used recently
+ * @param {string} newPassword - The new password to check
+ * @param {Array} passwordHistory - Array of previous password hashes
+ * @returns {Promise<Object>} - Validation result with success status
+ */
+const validatePasswordReuse = async (newPassword, passwordHistory) => {
+    const bcrypt = require('bcrypt');
+
+    if (!passwordHistory || passwordHistory.length === 0) {
+        return { isValid: true };
+    }
+
+    // Check if new password matches any of the stored password hashes
+    for (const entry of passwordHistory) {
+        const isMatch = await bcrypt.compare(newPassword, entry.hash);
+        if (isMatch) {
+            return {
+                isValid: false,
+                message: 'This password was recently used. Please choose a different password.'
+            };
+        }
+    }
+
+    return { isValid: true };
+};
+
 module.exports = {
     validatePassword,
-    getPasswordErrorMessage
+    getPasswordErrorMessage,
+    validatePasswordReuse
 };

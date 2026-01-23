@@ -20,9 +20,23 @@ export default function Login() {
     try {
       const response = await api.post('/auth/login', { email, password });
       console.log('Login successful, API response:', response.data);
+
+      // Store password expiry warning if present
+      if (response.data.passwordExpiryWarning) {
+        sessionStorage.setItem('passwordExpiryWarning', JSON.stringify(response.data.passwordExpiryWarning));
+      }
+
       login(response.data);
       navigate(from, { replace: true });
     } catch (err) {
+      // Check if password has expired
+      if (err.response?.status === 403 && err.response?.data?.passwordExpired) {
+        navigate('/forgot-password', {
+          state: { message: 'Your password has expired. Please reset it to continue.' }
+        });
+        return;
+      }
+
       const message = err.response?.data?.message || 'Login failed. Please try again.';
       setError(message);
     }
@@ -53,7 +67,7 @@ export default function Login() {
               Forgot Password?
             </Link>
           </div>
-          
+
           <button type="submit" className="w-full py-3 font-semibold text-white bg-primary rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-300 ease-in-out transform hover:scale-105">
             Login
           </button>
