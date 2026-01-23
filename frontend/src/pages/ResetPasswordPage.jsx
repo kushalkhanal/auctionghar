@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
+import PasswordInput from '../components/PasswordInput';
 
 const ResetPasswordPage = () => {
     const navigate = useNavigate();
@@ -74,17 +74,15 @@ const ResetPasswordPage = () => {
                     </div>
                     <div>
                         <label htmlFor="newPassword" className="block text-sm font-semibold text-gray-700">New Password</label>
-                        <input
-                            type="password"
-                            id="newPassword"
+                        <PasswordInput
                             value={newPassword}
-                            minLength="8"
-                            onChange={(e) => setNewPassword(e.target.value)}
+                            onChange={setNewPassword}
                             placeholder="Password (min. 8 characters)"
-                            className="mt-1 w-full px-4 py-3 bg-neutral-light border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                            required
+                            showStrengthMeter={true}
+                            showCapsLockWarning={true}
+                            id="newPassword"
+                            required={true}
                         />
-                        <PasswordStrengthIndicator password={newPassword} />
                     </div>
                     <button type="submit" disabled={loading} className="w-full py-3 font-semibold text-white bg-primary rounded-lg hover:bg-primary-dark disabled:bg-gray-400">
                         {loading ? 'Resetting...' : 'Reset Password'}

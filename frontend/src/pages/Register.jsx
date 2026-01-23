@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
+import PasswordInput from '../components/PasswordInput';
+import PasswordMatchIndicator from '../components/PasswordMatchIndicator';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -11,13 +12,14 @@ export default function Register() {
     lastName: '',
     email: '',
     password: '',
+    confirmPassword: '',
     number: '',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false); // Added loading state for the button
+  const [loading, setLoading] = useState(false);
 
-  const { firstName, lastName, email, password, number } = formData;
+  const { firstName, lastName, email, password, confirmPassword, number } = formData;
 
   const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -27,10 +29,17 @@ export default function Register() {
     setSuccess('');
     setLoading(true);
 
-    // 1. Client-Side Validation (gives immediate feedback)
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
+
+    // Client-Side Validation
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
-      setLoading(false); // Stop loading
+      setLoading(false);
       return;
     }
 
@@ -45,24 +54,27 @@ export default function Register() {
     const phoneRegex = /^\d{10}$/;
     if (!phoneRegex.test(number)) {
       setError('Please enter a valid 10-digit mobile number.');
-      setLoading(false); // Stop loading
+      setLoading(false);
       return;
     }
 
     try {
-      // The API call is to '/api/auth/register', which is correct based on your setup.
-      const response = await api.post('/auth/register', formData);
+      const response = await api.post('/auth/register', {
+        firstName,
+        lastName,
+        email,
+        password,
+        number
+      });
 
-      // If successful, show a success message and redirect
       setSuccess(response.data.message + '. Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
 
     } catch (err) {
-      // This will now properly catch and display backend errors (e.g., "User already exists")
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
       console.error("Registration failed:", err.response || err);
     } finally {
-      setLoading(false); // Stop loading in all cases (success or error)
+      setLoading(false);
     }
   };
 
@@ -74,7 +86,6 @@ export default function Register() {
           <p className="text-neutral-dark mt-2">Join the auction excitement!</p>
         </div>
 
-        {/* These message boxes will now display all errors correctly */}
         {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert"><p>{error}</p></div>}
         {success && <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md" role="alert"><p>{success}</p></div>}
 
@@ -97,23 +108,31 @@ export default function Register() {
           />
           <input type="email" name="email" value={email} onChange={onChange} placeholder="Email Address" className="w-full px-4 py-3 bg-neutral-light border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" required />
 
-          <div>
-            <input
-              type="password"
-              name="password"
-              value={password}
-              minLength="8"
-              onChange={onChange}
-              placeholder="Password (min. 8 characters)"
-              className="w-full px-4 py-3 bg-neutral-light border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              required
-            />
-            <PasswordStrengthIndicator password={password} />
-          </div>
+          <PasswordInput
+            value={password}
+            onChange={(val) => setFormData({ ...formData, password: val })}
+            placeholder="Password (min. 8 characters)"
+            showStrengthMeter={true}
+            showCapsLockWarning={true}
+            name="password"
+            id="password"
+          />
+
+          <PasswordInput
+            value={confirmPassword}
+            onChange={(val) => setFormData({ ...formData, confirmPassword: val })}
+            placeholder="Confirm Password"
+            showStrengthMeter={false}
+            showCapsLockWarning={true}
+            name="confirmPassword"
+            id="confirmPassword"
+          />
+
+          <PasswordMatchIndicator password={password} confirmPassword={confirmPassword} />
 
           <button
             type="submit"
-            disabled={loading} // Disable button while processing
+            disabled={loading}
             className="w-full py-3 font-semibold text-white bg-primary rounded-lg hover:bg-primary-dark transition-all duration-300 transform hover:scale-105 disabled:bg-gray-400 disabled:scale-100"
           >
             {loading ? 'Registering...' : 'Register'}

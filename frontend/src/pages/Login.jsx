@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axiosConfig';
+import PasswordInput from '../components/PasswordInput';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -58,9 +59,14 @@ export default function Login() {
           <div>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email Address" className="w-full px-4 py-3 bg-neutral-light border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-glow transition duration-300" required />
           </div>
-          <div>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full px-4 py-3 bg-neutral-light border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-glow transition duration-300" required />
-          </div>
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
+            placeholder="Password"
+            showCapsLockWarning={true}
+            showStrengthMeter={false}
+            required={true}
+          />
 
           <div className="text-right">
             <Link to="/forgot-password" className="text-sm font-medium text-primary hover:text-primary-dark">

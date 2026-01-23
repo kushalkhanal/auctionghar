@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axiosConfig';
-import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
+import PasswordInput from '../components/PasswordInput';
 
 export default function ChangePasswordPage() {
     const navigate = useNavigate();
@@ -103,53 +103,42 @@ export default function ChangePasswordPage() {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Current Password */}
                         <div>
-                            <label htmlFor="currentPassword" className="block text-sm font-medium text-neutral-darkest mb-2">
-                                Current Password
-                            </label>
-                            <input
-                                type="password"
-                                id="currentPassword"
+                            <PasswordInput
+                                label="Current Password"
                                 value={currentPassword}
-                                onChange={(e) => setCurrentPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-neutral-light border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-glow transition duration-300"
-                                required
+                                onChange={setCurrentPassword}
+                                showCapsLockWarning={true}
+                                showStrengthMeter={false}
+                                id="currentPassword"
+                                required={true}
                                 disabled={loading || !!success}
                             />
                         </div>
 
                         {/* New Password */}
                         <div>
-                            <label htmlFor="newPassword" className="block text-sm font-medium text-neutral-darkest mb-2">
-                                New Password
-                            </label>
-                            <input
-                                type="password"
-                                id="newPassword"
+                            <PasswordInput
+                                label="New Password"
                                 value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-neutral-light border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-glow transition duration-300"
-                                required
+                                onChange={setNewPassword}
+                                showCapsLockWarning={true}
+                                showStrengthMeter={true}
+                                id="newPassword"
+                                required={true}
                                 disabled={loading || !!success}
                             />
-                            {newPassword && (
-                                <div className="mt-3">
-                                    <PasswordStrengthIndicator password={newPassword} />
-                                </div>
-                            )}
                         </div>
 
                         {/* Confirm New Password */}
                         <div>
-                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-neutral-darkest mb-2">
-                                Confirm New Password
-                            </label>
-                            <input
-                                type="password"
-                                id="confirmPassword"
+                            <PasswordInput
+                                label="Confirm New Password"
                                 value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-neutral-light border border-neutral-light rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-glow transition duration-300"
-                                required
+                                onChange={setConfirmPassword}
+                                showCapsLockWarning={true}
+                                showStrengthMeter={false}
+                                id="confirmPassword"
+                                required={true}
                                 disabled={loading || !!success}
                             />
                             {confirmPassword && newPassword && confirmPassword !== newPassword && (
