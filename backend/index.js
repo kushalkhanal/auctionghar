@@ -22,6 +22,9 @@ const mfaRoutes = require('./routes/mfaRoutes.js');
 // Create Express app
 const app = express();
 
+// Trust proxy - Required for rate limiting to work behind proxies (Nginx, Cloudflare, etc.)
+app.set('trust proxy', 1);
+
 // Core Middlewares
 app.use(cors());
 app.use(express.json());
