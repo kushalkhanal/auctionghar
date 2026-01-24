@@ -79,7 +79,7 @@ const ProfilePage = () => {
               value={statistics.totalBids}
               color="blue"
             />
-            <Stat Card
+            <StatCard
               icon={TrophyIcon}
               label="Items Won"
               value={statistics.itemsWon}

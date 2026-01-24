@@ -117,10 +117,34 @@ const generalApiRateLimiter = rateLimit({
     }
 });
 
+/**
+ * Rate Limiter for Profile Updates
+ * - Prevents spam profile updates
+ * - 5 updates per 15 minutes per user
+ */
+const profileUpdateRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5,
+    message: {
+        success: false,
+        message: 'Too many profile updates. Please try again in 15 minutes.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            message: 'Too many profile updates. Please try again in 15 minutes.',
+            retryAfter: Math.ceil(req.rateLimit.resetTime / 1000)
+        });
+    }
+});
+
 module.exports = {
     loginRateLimiter,
     registrationRateLimiter,
     passwordResetRateLimiter,
     mfaVerificationRateLimiter,
+    profileUpdateRateLimiter,
     generalApiRateLimiter
 };

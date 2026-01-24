@@ -85,7 +85,6 @@ export default function Register() {
 
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
-      console.error("Registration failed:", err.response || err);
     } finally {
       setLoading(false);
     }

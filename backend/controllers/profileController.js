@@ -1,8 +1,7 @@
-// File: backend/controllers/profileController.js
-
 const User = require('../models/userModel.js');
 const BiddingRoom = require('../models/biddingRoomModel.js');
 const jwt = require('jsonwebtoken');
+const xss = require('xss');
 
 // @desc    Get all data for the user's profile page (profile, listings, bid history)
 // @route   GET /api/profile
@@ -62,21 +61,30 @@ exports.updateMyProfile = async (req, res) => {
         if (req.body.number && req.body.number !== user.number) {
             const existingUser = await User.findOne({ number: req.body.number });
             if (existingUser && existingUser._id.toString() !== user._id.toString()) {
-                return res.status(400).json({ message: 'This phone number is already in use by another account.' });
+                return res.status(400).json({
+                    success: false,
+                    message: 'This phone number is already in use by another account.'
+                });
             }
         }
 
-        // Update text fields from the form data
-        user.firstName = req.body.firstName || user.firstName;
-        user.lastName = req.body.lastName || user.lastName;
-        user.number = req.body.number || user.number;
-        user.location = req.body.location || user.location;
+        // Sanitize inputs to prevent XSS attacks
+        const sanitizedData = {
+            firstName: xss(req.body.firstName.trim()),
+            lastName: xss(req.body.lastName.trim()),
+            number: req.body.number.trim(),
+            location: req.body.location ? xss(req.body.location.trim()) : ''
+        };
+
+        // Update user with sanitized data
+        user.firstName = sanitizedData.firstName;
+        user.lastName = sanitizedData.lastName;
+        user.number = sanitizedData.number;
+        user.location = sanitizedData.location;
 
         // Handle the file upload (req.file is added by the upload middleware)
         if (req.file) {
-            console.log('File uploaded:', req.file);
             user.profileImage = '/' + req.file.path.replace(/\\/g, "/");
-            console.log('Profile image path set to:', user.profileImage);
         }
 
         const updatedUser = await user.save();
@@ -101,14 +109,24 @@ exports.updateMyProfile = async (req, res) => {
             location: updatedUser.location,
         };
 
-        res.json({ user: userPayload, token });
+        res.json({
+            success: true,
+            user: userPayload,
+            token
+        });
 
     } catch (error) {
         console.error("Profile update server error:", error);
         if (error.name === 'ValidationError') {
-            return res.status(400).json({ message: error.message });
+            return res.status(400).json({
+                success: false,
+                message: error.message
+            });
         }
-        res.status(500).json({ message: 'Server Error during profile update.' });
+        res.status(500).json({
+            success: false,
+            message: 'Server Error during profile update.'
+        });
     }
 };
 

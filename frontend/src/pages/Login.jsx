@@ -41,7 +41,6 @@ export default function Login() {
       }
 
       const response = await api.post('/auth/login', { email, password, captchaToken });
-      console.log('Login successful, API response:', response.data);
 
       // Check if MFA is required
       if (response.data.mfaRequired) {
@@ -85,7 +84,6 @@ export default function Login() {
     setMfaError('');
     try {
       const response = await verifyMFALogin(code, isBackupCode, tempToken);
-      console.log('MFA verification successful:', response);
 
       // Store password expiry warning if present
       if (response.passwordExpiryWarning) {
