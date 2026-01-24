@@ -8,10 +8,11 @@ const {
     registrationRateLimiter,
     passwordResetRateLimiter
 } = require('../middlewares/rateLimitMiddleware.js');
+const { verifyCaptcha } = require('../middlewares/captchaMiddleware.js');
 
-// Apply rate limiters to prevent brute-force attacks
-router.post('/register', registrationRateLimiter, registerUser);
-router.post('/login', loginRateLimiter, loginUser);
+// Apply rate limiters and CAPTCHA to prevent brute-force attacks
+router.post('/register', registrationRateLimiter, verifyCaptcha, registerUser);
+router.post('/login', loginRateLimiter, verifyCaptcha, loginUser);
 router.post('/forgot-password', passwordResetRateLimiter, forgotPassword);
 router.post('/reset-password', passwordResetRateLimiter, resetPassword);
 

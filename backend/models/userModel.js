@@ -37,6 +37,19 @@ const UserSchema = new mongoose.Schema(
         }],
         mfaEnabledAt: Date,
 
+        // Account lockout fields for brute-force protection
+        failedLoginAttempts: {
+            type: Number,
+            default: 0
+        },
+        lockoutUntil: {
+            type: Date,
+            default: null
+        },
+        lastFailedLogin: {
+            type: Date
+        },
+
         // Password history tracking for reuse prevention
         passwordHistory: [{
             hash: { type: String, required: true },

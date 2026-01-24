@@ -98,11 +98,45 @@ exports.loginUser = async (req, res) => {
             });
         }
 
+        // Check if account is locked due to too many failed attempts
+        if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+            const minutesRemaining = Math.ceil((user.lockoutUntil - new Date()) / 60000);
+            return res.status(403).json({
+                success: false,
+                message: `Account is temporarily locked due to too many failed login attempts. Try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''}.`,
+                accountLocked: true,
+                lockoutUntil: user.lockoutUntil
+            });
+        }
+
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            // Increment failed login attempts
+            user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+            user.lastFailedLogin = new Date();
+
+            // Lock account after 5 failed attempts
+            const MAX_FAILED_ATTEMPTS = 5;
+            const LOCKOUT_DURATION_MINUTES = 30;
+
+            if (user.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
+                user.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60 * 1000);
+                await user.save();
+
+                return res.status(403).json({
+                    success: false,
+                    message: `Account locked due to too many failed login attempts. Try again in ${LOCKOUT_DURATION_MINUTES} minutes.`,
+                    accountLocked: true,
+                    lockoutUntil: user.lockoutUntil
+                });
+            }
+
+            await user.save();
+
             return res.status(401).json({
-                "success": false,
-                "message": "Invalid credentials"
+                success: false,
+                message: "Invalid credentials",
+                attemptsRemaining: MAX_FAILED_ATTEMPTS - user.failedLoginAttempts
             });
         }
 
@@ -114,6 +148,12 @@ exports.loginUser = async (req, res) => {
                 passwordExpired: true
             });
         }
+
+        // Password is correct - reset failed login attempts
+        user.failedLoginAttempts = 0;
+        user.lockoutUntil = null;
+        user.lastFailedLogin = null;
+        await user.save();
 
         // Check if MFA is enabled
         if (user.mfaEnabled && user.mfaVerified) {
