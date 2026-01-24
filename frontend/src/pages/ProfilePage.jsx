@@ -1,22 +1,41 @@
 
-import React, { Fragment, useState } from 'react';
-import { useUserProfile } from '../hooks/useUserProfile'; // <-- We only need this one hook
+import React, { Fragment, useState, useEffect } from 'react';
+import { useUserProfile } from '../hooks/useUserProfile';
 import { Tab } from '@headlessui/react';
-import { UserIcon, DocumentTextIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { UserIcon, DocumentTextIcon, Cog6ToothIcon, TrophyIcon, ShoppingBagIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import MyBidsTab from '../components/profile/MyBidsTab';
 import SellingItemsTab from '../components/profile/SellingItemsTab';
 import SettingsTab from '../components/profile/SettingsTab';
+import StatCard from '../components/StatCard';
+import api from '../api/axiosConfig';
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
 const ProfilePage = () => {
-  // This single hook call gets ALL data and the function to refresh it.
   const { profile, listedItems, bidHistory, loading, error, refresh } = useUserProfile();
-
-  // This state controls which tab is currently selected, preventing it from resetting.
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [statistics, setStatistics] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Fetch profile statistics
+  useEffect(() => {
+    const fetchStatistics = async () => {
+      try {
+        const response = await api.get('/profile/statistics');
+        setStatistics(response.data);
+      } catch (err) {
+        console.error('Error fetching statistics:', err);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    if (profile) {
+      fetchStatistics();
+    }
+  }, [profile]);
 
   // Handle loading and error states first
   if (loading) return <div className="text-center py-20 text-lg font-semibold">Loading Profile...</div>;
@@ -35,10 +54,10 @@ const ProfilePage = () => {
       <div className="container mx-auto p-4 sm:p-6 md:p-8">
         {/* --- Profile Header --- */}
         <div className="bg-white rounded-lg shadow-md p-6 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-          <img 
-            src={`http://localhost:5050${profile.profileImage}`} 
-            alt={profile.firstName} 
-            className="h-24 w-24 md:h-32 md:w-32 rounded-full border-4 border-primary object-cover bg-gray-200" 
+          <img
+            src={`http://localhost:5050${profile.profileImage}`}
+            alt={profile.firstName}
+            className="h-24 w-24 md:h-32 md:w-32 rounded-full border-4 border-primary object-cover bg-gray-200"
           />
           <div>
             <h1 className="text-3xl font-bold text-neutral-darkest">{profile.firstName} {profile.lastName}</h1>
@@ -50,6 +69,45 @@ const ProfilePage = () => {
             <p className="text-3xl font-bold text-primary">${profile.wallet.toLocaleString()}</p>
           </div>
         </div>
+
+        {/* --- Profile Statistics --- */}
+        {!statsLoading && statistics && (
+          <div className="mt-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <StatCard
+              icon={ChartBarIcon}
+              label="Total Bids"
+              value={statistics.totalBids}
+              color="blue"
+            />
+            <Stat Card
+              icon={TrophyIcon}
+              label="Items Won"
+              value={statistics.itemsWon}
+              color="green"
+            />
+            <StatCard
+              icon={ShoppingBagIcon}
+              label="Items Sold"
+              value={statistics.itemsSold}
+              color="purple"
+            />
+            <StatCard
+              label="Success Rate"
+              value={`${statistics.successRate}%`}
+              color="orange"
+            />
+            <StatCard
+              label="Active Listings"
+              value={statistics.activeListings}
+              color="primary"
+            />
+            <StatCard
+              label="Member Since"
+              value={new Date(statistics.memberSince).getFullYear()}
+              color="primary"
+            />
+          </div>
+        )}
 
         {/* --- Tabs Section --- */}
         <div className="w-full max-w-4xl mx-auto pt-8 pb-10">

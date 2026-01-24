@@ -37,7 +37,7 @@ exports.getMyProfileData = async (req, res) => {
                 }
             }
         }
-        
+
         res.status(200).json({
             profile: userProfile,
             listedItems,
@@ -78,7 +78,7 @@ exports.updateMyProfile = async (req, res) => {
             user.profileImage = '/' + req.file.path.replace(/\\/g, "/");
             console.log('Profile image path set to:', user.profileImage);
         }
-        
+
         const updatedUser = await user.save();
 
         // Generate a new token with potentially updated information
@@ -87,7 +87,7 @@ exports.updateMyProfile = async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
-        
+
         // Create a clean payload to send back to the frontend
         const userPayload = {
             id: updatedUser._id,
@@ -140,6 +140,71 @@ exports.getMySoldItems = async (req, res) => {
         res.status(200).json(soldItems);
     } catch (error) {
         console.error("Error fetching sold items:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+// @desc    Get user profile statistics
+// @route   GET /api/profile/statistics
+// @access  Private
+exports.getProfileStatistics = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Fetch user and bidding data
+        const [user, roomsWithUserBids, itemsUserIsSelling] = await Promise.all([
+            User.findById(userId).select('createdAt'),
+            BiddingRoom.find({ 'bids.bidder': userId }),
+            BiddingRoom.find({ seller: userId })
+        ]);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const now = new Date();
+        let totalBids = 0;
+        let itemsWon = 0;
+
+        // Count total bids and items won
+        for (const room of roomsWithUserBids) {
+            if (room.bids && room.bids.length > 0) {
+                const userBidsInRoom = room.bids.filter(
+                    bid => bid.bidder && bid.bidder.toString() === userId
+                );
+                totalBids += userBidsInRoom.length;
+
+                // Check if user won this auction
+                const isAuctionOver = now > new Date(room.endTime);
+                if (isAuctionOver && room.bids[0].bidder.toString() === userId) {
+                    itemsWon++;
+                }
+            }
+        }
+
+        // Count items sold (where auction ended and there were bids)
+        const itemsSold = itemsUserIsSelling.filter(room => {
+            const isAuctionOver = now > new Date(room.endTime);
+            return isAuctionOver && room.bids && room.bids.length > 0;
+        }).length;
+
+        // Calculate success rate (items won / total unique auctions participated in)
+        const uniqueAuctionsParticipated = roomsWithUserBids.length;
+        const successRate = uniqueAuctionsParticipated > 0
+            ? ((itemsWon / uniqueAuctionsParticipated) * 100).toFixed(1)
+            : 0;
+
+        res.status(200).json({
+            totalBids,
+            itemsWon,
+            itemsSold,
+            successRate: parseFloat(successRate),
+            memberSince: user.createdAt,
+            activeListings: itemsUserIsSelling.filter(room => now < new Date(room.endTime)).length
+        });
+
+    } catch (error) {
+        console.error("Error fetching profile statistics:", error);
         res.status(500).json({ message: "Server Error" });
     }
 };
