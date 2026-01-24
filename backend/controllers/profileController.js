@@ -2,6 +2,7 @@ const User = require('../models/userModel.js');
 const BiddingRoom = require('../models/biddingRoomModel.js');
 const jwt = require('jsonwebtoken');
 const xss = require('xss');
+const AuditLog = require('../models/auditLogModel.js');
 
 // @desc    Get all data for the user's profile page (profile, listings, bid history)
 // @route   GET /api/profile
@@ -68,6 +69,15 @@ exports.updateMyProfile = async (req, res) => {
             }
         }
 
+        // Capture current state for audit logging
+        const beforeUpdate = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            number: user.number,
+            location: user.location,
+            profileImage: user.profileImage
+        };
+
         // Sanitize inputs to prevent XSS attacks
         const sanitizedData = {
             firstName: xss(req.body.firstName.trim()),
@@ -82,6 +92,17 @@ exports.updateMyProfile = async (req, res) => {
         user.number = sanitizedData.number;
         user.location = sanitizedData.location;
 
+        // Update privacy settings if provided
+        if (req.body.privacy) {
+            const privacy = typeof req.body.privacy === 'string' ? JSON.parse(req.body.privacy) : req.body.privacy;
+            user.privacy = {
+                profileVisibility: privacy.profileVisibility || user.privacy?.profileVisibility || 'public',
+                showEmail: privacy.showEmail !== undefined ? privacy.showEmail : (user.privacy?.showEmail || false),
+                showLocation: privacy.showLocation !== undefined ? privacy.showLocation : (user.privacy?.showLocation !== undefined ? user.privacy.showLocation : true),
+                showPhone: privacy.showPhone !== undefined ? privacy.showPhone : (user.privacy?.showPhone || false)
+            };
+        }
+
         // Handle the file upload (req.file is added by the upload middleware)
         if (req.file) {
             user.profileImage = '/' + req.file.path.replace(/\\/g, "/");
@@ -89,7 +110,44 @@ exports.updateMyProfile = async (req, res) => {
 
         const updatedUser = await user.save();
 
-        // Generate a new token with potentially updated information
+        // Create audit log entry
+        try {
+            const changes = new Map();
+
+            // Track what changed
+            if (beforeUpdate.firstName !== updatedUser.firstName) {
+                changes.set('firstName', `${beforeUpdate.firstName} → ${updatedUser.firstName}`);
+            }
+            if (beforeUpdate.lastName !== updatedUser.lastName) {
+                changes.set('lastName', `${beforeUpdate.lastName} → ${updatedUser.lastName}`);
+            }
+            if (beforeUpdate.number !== updatedUser.number) {
+                changes.set('number', `${beforeUpdate.number} → ${updatedUser.number}`);
+            }
+            if (beforeUpdate.location !== updatedUser.location) {
+                changes.set('location', `${beforeUpdate.location || '(empty)'} → ${updatedUser.location || '(empty)'}`);
+            }
+            if (beforeUpdate.profileImage !== updatedUser.profileImage) {
+                changes.set('profileImage', 'Image updated');
+            }
+
+            // Only create audit log if something actually changed
+            if (changes.size > 0) {
+                await AuditLog.create({
+                    userId: updatedUser._id,
+                    action: 'profile_update',
+                    changes: changes,
+                    ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+                    userAgent: req.headers['user-agent'] || 'unknown',
+                    success: true
+                });
+            }
+        } catch (auditError) {
+            // Log audit error but don't fail the request
+            console.error('Failed to create audit log:', auditError);
+        }
+
+        // Generate a new token with updated information
         const token = jwt.sign(
             { userId: updatedUser._id, firstName: updatedUser.firstName, role: updatedUser.role },
             process.env.JWT_SECRET,

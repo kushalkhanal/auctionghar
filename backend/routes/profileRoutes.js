@@ -5,6 +5,7 @@ const { protect } = require('../middlewares/authMiddleware.js');
 const { profileImageUpload } = require('../middlewares/uploadMiddleware.js');
 const { validateProfileUpdate, checkValidation } = require('../middlewares/validationMiddleware.js');
 const { profileUpdateRateLimiter } = require('../middlewares/rateLimitMiddleware.js');
+const { verifyResourceOwnership } = require('../middlewares/authorizationMiddleware.js');
 
 
 router.use(protect);
@@ -16,8 +17,15 @@ router.get('/', getMyProfileData);
 router.get('/statistics', getProfileStatistics);
 
 // PUT /api/profile - Updates user settings, handles image upload
-// Apply: rate limiting → file upload → validation → sanitization (in controller)
-router.put('/', profileUpdateRateLimiter, profileImageUpload, validateProfileUpdate, checkValidation, updateMyProfile);
+// Apply: rate limiting → file upload → validation → authorization → sanitization (in controller)
+router.put('/',
+    profileUpdateRateLimiter,
+    profileImageUpload,
+    validateProfileUpdate,
+    checkValidation,
+    verifyResourceOwnership,
+    updateMyProfile
+);
 
 router.get('/listed-items', getMyListedItems);
 module.exports = router;

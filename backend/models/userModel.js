@@ -77,6 +77,27 @@ const UserSchema = new mongoose.Schema(
         wallet: { type: Number, default: 0 },
         profileImage: { type: String, default: '/uploads/default-avatar.png' },
         location: { type: String, default: '', maxLength: 100 },
+
+        // Privacy settings - control what others can see
+        privacy: {
+            profileVisibility: {
+                type: String,
+                enum: ['public', 'bidders', 'private'],
+                default: 'public'
+            },
+            showEmail: {
+                type: Boolean,
+                default: false
+            },
+            showLocation: {
+                type: Boolean,
+                default: true
+            },
+            showPhone: {
+                type: Boolean,
+                default: false
+            }
+        }
     },
     { timestamps: true }
 );

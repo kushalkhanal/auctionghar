@@ -13,6 +13,12 @@ const SettingsTab = ({ user, onProfileUpdate }) => {
         number: user.number || '',
         location: user.location || ''
     });
+    const [privacySettings, setPrivacySettings] = useState({
+        profileVisibility: user.privacy?.profileVisibility || 'public',
+        showEmail: user.privacy?.showEmail || false,
+        showLocation: user.privacy?.showLocation !== undefined ? user.privacy.showLocation : true,
+        showPhone: user.privacy?.showPhone || false
+    });
     const [profileImage, setProfileImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [message, setMessage] = useState('');
@@ -62,6 +68,9 @@ const SettingsTab = ({ user, onProfileUpdate }) => {
         submissionData.append('lastName', formData.lastName);
         submissionData.append('number', formData.number);
         submissionData.append('location', formData.location);
+
+        // Add privacy settings
+        submissionData.append('privacy', JSON.stringify(privacySettings));
 
         if (profileImage) {
             submissionData.append('profileImage', profileImage);
@@ -163,6 +172,80 @@ const SettingsTab = ({ user, onProfileUpdate }) => {
                 </button>
                 {message && <p className={`mt-2 text-sm font-medium ${message.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>{message}</p>}
             </form>
+
+            {/* Privacy Settings */}
+            <div className="mt-8 pt-8 border-t border-neutral-light">
+                <h2 className="text-2xl font-semibold mb-4 text-neutral-darkest">Privacy Settings</h2>
+                <p className="text-sm text-neutral-dark mb-6">Control who can see your profile information</p>
+
+                <div className="space-y-4 max-w-lg">
+                    {/* Profile Visibility */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Profile Visibility</label>
+                        <select
+                            value={privacySettings.profileVisibility}
+                            onChange={(e) => setPrivacySettings({ ...privacySettings, profileVisibility: e.target.value })}
+                            className="w-full p-2 border rounded-md"
+                        >
+                            <option value="public">Public - Anyone can view</option>
+                            <option value="bidders">Bidders Only - Only people you bid against</option>
+                            <option value="private">Private - Only you</option>
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">Controls overall profile visibility</p>
+                    </div>
+
+                    {/* Show Email */}
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                        <div>
+                            <p className="font-medium">Show Email</p>
+                            <p className="text-xs text-gray-500">Let others see your email address</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={privacySettings.showEmail}
+                                onChange={(e) => setPrivacySettings({ ...privacySettings, showEmail: e.target.checked })}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+
+                    {/* Show Location */}
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                        <div>
+                            <p className="font-medium">Show Location</p>
+                            <p className="text-xs text-gray-500">Let others see your location</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={privacySettings.showLocation}
+                                onChange={(e) => setPrivacySettings({ ...privacySettings, showLocation: e.target.checked })}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+
+                    {/* Show Phone */}
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                        <div>
+                            <p className="font-medium">Show Phone Number</p>
+                            <p className="text-xs text-gray-500">Let others see your phone number</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={privacySettings.showPhone}
+                                onChange={(e) => setPrivacySettings({ ...privacySettings, showPhone: e.target.checked })}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
 
             {/* Security Settings - MFA */}
             <div className="mt-8 pt-8 border-t border-neutral-light">
