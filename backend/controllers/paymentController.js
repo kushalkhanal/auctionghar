@@ -17,11 +17,8 @@ const {
     ESEWA_VERIFY_URL,
     FRONTEND_URL
 } = process.env;
-console.log("ESEWA_MERCHANT_CODE",ESEWA_MERCHANT_CODE);
-console.log("ESEWA_MERCHANT_SECRET",ESEWA_MERCHANT_SECRET);
-console.log("ESEWA_API_URL",ESEWA_API_URL);
-console.log("ESEWA_VERIFY_URL",ESEWA_VERIFY_URL);
-console.log("FRONTEND_URL",FRONTEND_URL);
+
+// Environment variables loaded (credentials hidden for security)
 
 
 /**

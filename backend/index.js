@@ -17,6 +17,7 @@ const adminBiddingRoomRoutes = require('./routes/admin/biddingRoomManagementRout
 const paymentRoutes = require('./routes/paymentRoutes.js');
 const profileRoutes = require('./routes/profileRoutes.js');
 const notificationRoutes = require('./routes/notificationRoutes.js');
+const mfaRoutes = require('./routes/mfaRoutes.js');
 
 // Create Express app
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/bidding-rooms', biddingRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/mfa', mfaRoutes);
 
 // Admin Routes
 app.use('/api/admin/dashboard', protect, isAdmin, adminDashboardRoutes);

@@ -3,6 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axiosConfig';
 import PasswordInput from '../components/PasswordInput';
+import MFAVerificationModal from '../components/MFAVerificationModal';
+import { verifyMFALogin } from '../api/mfaService';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,6 +13,12 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  // MFA states
+  const [showMFAModal, setShowMFAModal] = useState(false);
+  const [tempToken, setTempToken] = useState('');
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaError, setMfaError] = useState('');
 
   // Get the intended destination from location state, or default to home
   const from = location.state?.from?.pathname || '/';
@@ -21,6 +29,13 @@ export default function Login() {
     try {
       const response = await api.post('/auth/login', { email, password });
       console.log('Login successful, API response:', response.data);
+
+      // Check if MFA is required
+      if (response.data.mfaRequired) {
+        setTempToken(response.data.tempToken);
+        setShowMFAModal(true);
+        return;
+      }
 
       // Store password expiry warning if present
       if (response.data.passwordExpiryWarning) {
@@ -40,6 +55,30 @@ export default function Login() {
 
       const message = err.response?.data?.message || 'Login failed. Please try again.';
       setError(message);
+    }
+  };
+
+  const handleMFAVerification = async (code, isBackupCode) => {
+    setMfaLoading(true);
+    setMfaError('');
+    try {
+      const response = await verifyMFALogin(code, isBackupCode, tempToken);
+      console.log('MFA verification successful:', response);
+
+      // Store password expiry warning if present
+      if (response.passwordExpiryWarning) {
+        sessionStorage.setItem('passwordExpiryWarning', JSON.stringify(response.passwordExpiryWarning));
+      }
+
+      // Login with the full token
+      login(response);
+      setShowMFAModal(false);
+      navigate(from, { replace: true });
+    } catch (err) {
+      const message = err.response?.data?.message || 'Invalid verification code';
+      setMfaError(message);
+    } finally {
+      setMfaLoading(false);
     }
   };
 
@@ -85,6 +124,14 @@ export default function Login() {
           </Link>
         </div>
       </div>
+
+      {/* MFA Verification Modal */}
+      <MFAVerificationModal
+        isOpen={showMFAModal}
+        onVerify={handleMFAVerification}
+        loading={mfaLoading}
+        error={mfaError}
+      />
     </div>
   );
 }

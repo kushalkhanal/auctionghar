@@ -11,6 +11,32 @@ const UserSchema = new mongoose.Schema(
         passwordResetOTP: { type: String },
         passwordResetExpires: { type: Date },
 
+        // Multi-Factor Authentication (MFA) fields
+        mfaEnabled: {
+            type: Boolean,
+            default: false
+        },
+        mfaSecret: {
+            type: String,
+            select: false // Don't return by default for security
+        },
+        mfaVerified: {
+            type: Boolean,
+            default: false
+        },
+        backupCodes: [{
+            code: {
+                type: String,
+                required: true
+            },
+            used: {
+                type: Boolean,
+                default: false
+            },
+            usedAt: Date
+        }],
+        mfaEnabledAt: Date,
+
         // Password history tracking for reuse prevention
         passwordHistory: [{
             hash: { type: String, required: true },

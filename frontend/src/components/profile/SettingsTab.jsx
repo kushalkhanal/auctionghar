@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import api from '../../api/axiosConfig';
 import { useAuth } from '../../context/AuthContext';
+import MFASettings from '../MFASettings';
 
 const SettingsTab = ({ user, onProfileUpdate }) => {
 
@@ -30,22 +31,22 @@ const SettingsTab = ({ user, onProfileUpdate }) => {
                 setMessage('Error: Please select a valid image file (JPEG, PNG, or GIF).');
                 return;
             }
-            
+
             // Validate file size (2MB limit)
             if (file.size > 2 * 1024 * 1024) {
                 setMessage('Error: Image size must be less than 2MB.');
                 return;
             }
-            
+
             setProfileImage(file);
-            
+
             // Create preview
             const reader = new FileReader();
             reader.onload = (e) => {
                 setImagePreview(e.target.result);
             };
             reader.readAsDataURL(file);
-            
+
             setMessage(''); // Clear any previous error messages
         }
     };
@@ -73,17 +74,17 @@ const SettingsTab = ({ user, onProfileUpdate }) => {
                 login(data);
             }
             setMessage('Profile updated successfully!');
-            
+
             // Clear the file input and preview
             setProfileImage(null);
             setImagePreview(null);
-            
+
             // Reset the file input
             const fileInput = document.querySelector('input[type="file"]');
             if (fileInput) {
                 fileInput.value = '';
             }
-            
+
             // Refresh the profile data if callback is provided
             if (onProfileUpdate) {
                 onProfileUpdate();
@@ -105,17 +106,17 @@ const SettingsTab = ({ user, onProfileUpdate }) => {
     return (
         <div>
             <h2 className="text-2xl font-semibold mb-4 text-neutral-darkest">Profile Settings</h2>
-            
+
             {/* Current Profile Image Display */}
             <div className="mb-6">
                 <p className="text-sm font-medium text-gray-700 mb-2">Current Profile Picture</p>
-                <img 
-                    src={`http://localhost:5050${user.profileImage}`} 
-                    alt="Current profile" 
+                <img
+                    src={`http://localhost:5050${user.profileImage}`}
+                    alt="Current profile"
                     className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
                 />
             </div>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input name="firstName" value={formData.firstName} onChange={handleChange} placeholder="First Name" className="p-2 border rounded-md" />
@@ -125,19 +126,19 @@ const SettingsTab = ({ user, onProfileUpdate }) => {
                 <input name="location" value={formData.location} onChange={handleChange} placeholder="Location (e.g., Kathmandu)" className="w-full p-2 border rounded-md" />
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Update Profile Picture</label>
-                    <input 
-                        type="file" 
-                        name="profileImage" 
-                        onChange={handleFileChange} 
+                    <input
+                        type="file"
+                        name="profileImage"
+                        onChange={handleFileChange}
                         accept="image/jpeg,image/jpg,image/png,image/gif"
-                        className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" 
+                        className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
                     />
                     {imagePreview && (
                         <div className="mt-3">
                             <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                            <img 
-                                src={imagePreview} 
-                                alt="Profile preview" 
+                            <img
+                                src={imagePreview}
+                                alt="Profile preview"
                                 className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
                             />
                         </div>
@@ -162,6 +163,12 @@ const SettingsTab = ({ user, onProfileUpdate }) => {
                 </button>
                 {message && <p className={`mt-2 text-sm font-medium ${message.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>{message}</p>}
             </form>
+
+            {/* Security Settings - MFA */}
+            <div className="mt-8 pt-8 border-t border-neutral-light">
+                <h2 className="text-2xl font-semibold mb-4 text-neutral-darkest">Security Settings</h2>
+                <MFASettings />
+            </div>
         </div>
     );
 };

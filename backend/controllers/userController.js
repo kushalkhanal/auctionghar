@@ -115,6 +115,26 @@ exports.loginUser = async (req, res) => {
             });
         }
 
+        // Check if MFA is enabled
+        if (user.mfaEnabled && user.mfaVerified) {
+            // Issue temporary token for MFA verification step
+            const tempToken = jwt.sign(
+                {
+                    userId: user._id,
+                    mfaPending: true
+                },
+                process.env.JWT_SECRET,
+                { expiresIn: '10m' } // Short expiration for temp token
+            );
+
+            return res.status(200).json({
+                success: true,
+                mfaRequired: true,
+                tempToken,
+                message: 'Please provide your MFA verification code'
+            });
+        }
+
         // 5. The JWT payload no longer contains 'username'
         const token = jwt.sign(
             {
