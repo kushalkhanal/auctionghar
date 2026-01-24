@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import PasswordInput from '../components/PasswordInput';
 import PasswordMatchIndicator from '../components/PasswordMatchIndicator';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 export default function Register() {
   const navigate = useNavigate();
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -59,12 +61,22 @@ export default function Register() {
     }
 
     try {
+      // Generate reCAPTCHA token
+      if (!executeRecaptcha) {
+        setError('reCAPTCHA not loaded yet. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      const captchaToken = await executeRecaptcha('register');
+
       const response = await api.post('/auth/register', {
         firstName,
         lastName,
         email,
         password,
-        number
+        number,
+        captchaToken
       });
 
       setSuccess(response.data.message + '. Redirecting to login...');
@@ -76,7 +88,7 @@ export default function Register() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [firstName, lastName, email, password, number, executeRecaptcha, navigate]);
 
   return (
     <div className="min-h-screen bg-neutral-lightest flex items-center justify-center p-4">

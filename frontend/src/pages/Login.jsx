@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axiosConfig';
 import PasswordInput from '../components/PasswordInput';
 import MFAVerificationModal from '../components/MFAVerificationModal';
 import { verifyMFALogin } from '../api/mfaService';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -23,11 +25,20 @@ export default function Login() {
   // Get the intended destination from location state, or default to home
   const from = location.state?.from?.pathname || '/';
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setError('');
+
     try {
-      const response = await api.post('/auth/login', { email, password });
+      // Generate reCAPTCHA token
+      if (!executeRecaptcha) {
+        setError('reCAPTCHA not loaded yet. Please try again.');
+        return;
+      }
+
+      const captchaToken = await executeRecaptcha('login');
+
+      const response = await api.post('/auth/login', { email, password, captchaToken });
       console.log('Login successful, API response:', response.data);
 
       // Check if MFA is required
@@ -54,9 +65,18 @@ export default function Login() {
       }
 
       const message = err.response?.data?.message || 'Login failed. Please try again.';
+
+      // Handle account lockout
+      if (err.response?.data?.accountLocked) {
+        const lockoutUntil = new Date(err.response.data.lockoutUntil);
+        const minutesRemaining = Math.ceil((lockoutUntil - new Date()) / 60000);
+        setError(`Account locked. Try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''}.`);
+        return;
+      }
+
       setError(message);
     }
-  };
+  }, [email, password, executeRecaptcha, navigate, from, login]);
 
   const handleMFAVerification = async (code, isBackupCode) => {
     setMfaLoading(true);
