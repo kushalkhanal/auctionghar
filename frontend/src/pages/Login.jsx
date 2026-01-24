@@ -30,13 +30,15 @@ export default function Login() {
     setError('');
 
     try {
-      // Generate reCAPTCHA token
-      if (!executeRecaptcha) {
-        setError('reCAPTCHA not loaded yet. Please try again.');
-        return;
+      // Generate reCAPTCHA token (optional for development)
+      let captchaToken = null;
+      if (executeRecaptcha) {
+        try {
+          captchaToken = await executeRecaptcha('login');
+        } catch (err) {
+          console.warn('reCAPTCHA not available:', err);
+        }
       }
-
-      const captchaToken = await executeRecaptcha('login');
 
       const response = await api.post('/auth/login', { email, password, captchaToken });
       console.log('Login successful, API response:', response.data);

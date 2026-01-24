@@ -25,7 +25,7 @@ export default function Register() {
 
   const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -61,14 +61,15 @@ export default function Register() {
     }
 
     try {
-      // Generate reCAPTCHA token
-      if (!executeRecaptcha) {
-        setError('reCAPTCHA not loaded yet. Please try again.');
-        setLoading(false);
-        return;
+      // Generate reCAPTCHA token (optional for development)
+      let captchaToken = null;
+      if (executeRecaptcha) {
+        try {
+          captchaToken = await executeRecaptcha('register');
+        } catch (err) {
+          console.warn('reCAPTCHA not available:', err);
+        }
       }
-
-      const captchaToken = await executeRecaptcha('register');
 
       const response = await api.post('/auth/register', {
         firstName,
@@ -88,7 +89,7 @@ export default function Register() {
     } finally {
       setLoading(false);
     }
-  }, [firstName, lastName, email, password, number, executeRecaptcha, navigate]);
+  }, [firstName, lastName, email, password, confirmPassword, number, executeRecaptcha, navigate]);
 
   return (
     <div className="min-h-screen bg-neutral-lightest flex items-center justify-center p-4">
