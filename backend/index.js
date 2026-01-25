@@ -41,9 +41,10 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/mfa', mfaRoutes);
 
-// Admin Routes
-app.use('/api/admin/dashboard', protect, isAdmin, adminDashboardRoutes);
-app.use('/api/admin/users', protect, isAdmin, adminUserRoutes);
-app.use('/api/admin/bidding-rooms', protect, isAdmin, adminBiddingRoomRoutes);
+// Admin Routes - Protected with authentication
+// RBAC permissions are applied within each route file
+app.use('/api/admin/dashboard', protect, adminDashboardRoutes);
+app.use('/api/admin/users', protect, adminUserRoutes);
+app.use('/api/admin/bidding-rooms', protect, adminBiddingRoomRoutes);
 
 module.exports = app;

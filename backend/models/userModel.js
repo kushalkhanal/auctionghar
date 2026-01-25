@@ -66,6 +66,7 @@ const UserSchema = new mongoose.Schema(
             index: true
         },
 
+
         number: {
             type: String,
             required: true,
@@ -73,7 +74,19 @@ const UserSchema = new mongoose.Schema(
             match: [/^\d{10}$/, 'Please fill a valid 10-digit mobile number']
         },
 
-        role: { type: String, enum: ['user', 'admin'], default: 'user' },
+        role: {
+            type: String,
+            enum: ['user', 'moderator', 'admin', 'superadmin'],
+            default: 'user'
+        },
+
+        // Custom permissions override (optional)
+        // Allows granting specific permissions beyond role defaults
+        customPermissions: {
+            type: [String],
+            default: []
+        },
+
         wallet: { type: Number, default: 0 },
         profileImage: { type: String, default: '/uploads/default-avatar.png' },
         location: { type: String, default: '', maxLength: 100 },

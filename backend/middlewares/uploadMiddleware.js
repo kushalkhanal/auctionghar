@@ -1,82 +1,183 @@
-// File: backend/middlewares/uploadMiddleware.js
-
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
-// --- Reusable Helper Functions ---
+// Ensure upload directory exists
+const uploadDir = 'uploads/profile-images';
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configure storage for profile images
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, './uploads/');
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
     },
-    filename: (req, file, cb) => {
-        cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+    filename: function (req, file, cb) {
+        // Sanitize filename: remove special characters, limit length
+        const sanitizedName = file.originalname
+            .replace(/[^a-zA-Z0-9.-]/g, '_') // Replace special chars with underscore
+            .substring(0, 100); // Limit to 100 characters
+
+        // Create unique filename with timestamp
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(sanitizedName);
+        const nameWithoutExt = path.basename(sanitizedName, ext);
+
+        cb(null, nameWithoutExt + '-' + uniqueSuffix + ext);
     }
 });
 
-function checkFileType(file, cb) {
-    const filetypes = /jpeg|jpg|png|gif/;
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = filetypes.test(file.mimetype);
+// Enhanced file filter with strict validation
+const fileFilter = (req, file, cb) => {
+    // Check MIME type (first line of defense)
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
 
-    if (mimetype && extname) {
-        return cb(null, true);
-    } else {
-        // This provides a specific error if the file is not an image
-        cb(new Error('Error: Please upload images only (jpeg, jpg, png, gif).'));
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+        return cb(new Error('Invalid file type. Only JPEG, PNG, and GIF images are allowed.'), false);
     }
-}
 
-// --- Middleware #1: For SINGLE Profile Image Uploads ---
-const profileImageUpload = (req, res, next) => {
-    const upload = multer({
-        storage,
-        limits: { fileSize: 2000000 }, // 2MB
-        fileFilter: (req, file, cb) => {
-            checkFileType(file, cb);
-        }
-    }).single('profileImage'); // Expects a single file from the 'profileImage' field
+    // Check file extension (second line of defense)
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+    const ext = path.extname(file.originalname).toLowerCase();
 
-    upload(req, res, (err) => {
+    if (!allowedExtensions.includes(ext)) {
+        return cb(new Error('Invalid file extension. Only .jpg, .jpeg, .png, and .gif are allowed.'), false);
+    }
+
+    // Prevent double extensions like .jpg.exe
+    const fileName = path.basename(file.originalname, ext);
+    if (fileName.includes('.')) {
+        return cb(new Error('Invalid filename. Files with multiple extensions are not allowed.'), false);
+    }
+
+    cb(null, true);
+};
+
+// Configure multer upload with strict limits
+const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 2 * 1024 * 1024, // 2MB strict limit
+        files: 1 // Only one file at a time
+    }
+});
+
+// Profile image upload middleware with magic number validation
+const profileImageUpload = upload.single('profileImage');
+
+// Wrapper to handle multer errors gracefully
+const profileImageUploadWithValidation = async (req, res, next) => {
+    profileImageUpload(req, res, async function (err) {
         if (err instanceof multer.MulterError) {
+            // Multer-specific errors
             if (err.code === 'LIMIT_FILE_SIZE') {
-                return res.status(400).json({ message: 'Profile image is too large. Max 2MB.' });
+                return res.status(400).json({
+                    success: false,
+                    message: 'File too large. Maximum size is 2MB.'
+                });
             }
-            return res.status(400).json({ message: err.message });
+            if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Too many files. Only one file allowed.'
+                });
+            }
+            return res.status(400).json({
+                success: false,
+                message: err.message
+            });
         } else if (err) {
-            return res.status(400).json({ message: err.message });
+            // Custom  errors from fileFilter
+            return res.status(400).json({
+                success: false,
+                message: err.message
+            });
         }
-        // If there's no file, or if there's no error, just proceed.
-        // The controller will handle the logic of whether a file was required.
-        next();
+
+        // File uploaded successfully, now validate magic numbers
+        if (req.file) {
+            try {
+                // Dynamic import for ESM module
+                const { fileTypeFromFile } = await import('file-type');
+                const fileType = await fileTypeFromFile(req.file.path);
+
+                // Verify actual file type matches claimed MIME type
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+
+                if (!fileType || !allowedTypes.includes(fileType.mime)) {
+                    // Delete the uploaded file (it's a fake/spoofed image)
+                    fs.unlinkSync(req.file.path);
+
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid file content. The file is not a valid image (failed magic number check).'
+                    });
+                }
+
+                // File is valid, continue
+                next();
+            } catch (validationError) {
+                console.error('File validation error:', validationError);
+
+                // Delete the file if validation fails
+                if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+
+                return res.status(500).json({
+                    success: false,
+                    message: 'File validation failed. Please try again.'
+                });
+            }
+        } else {
+            // No file uploaded (optional upload), continue
+            next();
+        }
     });
 };
 
-
-// --- Middleware #2: For MULTIPLE Product Image Uploads ---
+// Product images upload (for bidding rooms) - keeping original implementation for now
 const productImagesUpload = (req, res, next) => {
     const upload = multer({
-        storage,
-        limits: { fileSize: 5000000 }, // 5MB
-        fileFilter: (req, file, cb) => {
-            checkFileType(file, cb);
+        storage: storage,
+        fileFilter: fileFilter,
+        limits: {
+            fileSize: 5 * 1024 * 1024, // 5MB for product images
+            files: 5 // Up to 5 images
         }
-    }).array('productImages', 5); // Expects up to 5 files from the 'productImages' field
+    }).array('productImages', 5);
 
     upload(req, res, (err) => {
         if (err instanceof multer.MulterError) {
             if (err.code === 'LIMIT_FILE_SIZE') {
-                return res.status(400).json({ message: 'One or more images are too large. Max 5MB per file.' });
+                return res.status(400).json({
+                    success: false,
+                    message: 'One or more images are too large. Maximum size is 5MB per file.'
+                });
             }
-            return res.status(400).json({ message: err.message });
+            if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Too many files. Maximum 5 images allowed.'
+                });
+            }
+            return res.status(400).json({
+                success: false,
+                message: err.message
+            });
         } else if (err) {
-            return res.status(400).json({ message: err.message });
+            return res.status(400).json({
+                success: false,
+                message: err.message
+            });
         }
         next();
     });
 };
 
-// --- Export both middleware functions ---
 module.exports = {
-    profileImageUpload,
+    profileImageUpload: profileImageUploadWithValidation,
     productImagesUpload
 };
