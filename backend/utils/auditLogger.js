@@ -94,7 +94,8 @@ auditLogSchema.index({ eventType: 1, createdAt: -1 });
 auditLogSchema.index({ status: 1, createdAt: -1 });
 auditLogSchema.index({ createdAt: -1 }); // For time-based queries
 
-const AuditLog = mongoose.model('AuditLog', auditLogSchema);
+// Use a different model name to avoid conflict with security AuditLog
+const PaymentAuditLog = mongoose.models.PaymentAuditLog || mongoose.model('PaymentAuditLog', auditLogSchema);
 
 /**
  * Audit Logger Utility Functions
@@ -118,7 +119,7 @@ const logPaymentEvent = async ({
     securityFlags = []
 }) => {
     try {
-        const auditEntry = new AuditLog({
+        const auditEntry = new PaymentAuditLog({
             transactionId,
             eventType,
             userId,
@@ -151,7 +152,7 @@ const logPaymentEvent = async ({
  */
 const getTransactionAuditTrail = async (transactionId) => {
     try {
-        return await AuditLog.find({ transactionId })
+        return await PaymentAuditLog.find({ transactionId })
             .sort({ createdAt: 1 })
             .lean();
     } catch (error) {
@@ -168,7 +169,7 @@ const getTransactionAuditTrail = async (transactionId) => {
  */
 const getUserAuditLogs = async (userId, limit = 50) => {
     try {
-        return await AuditLog.find({ userId })
+        return await PaymentAuditLog.find({ userId })
             .sort({ createdAt: -1 })
             .limit(limit)
             .lean();
@@ -187,7 +188,7 @@ const getRecentSecurityEvents = async (hours = 24) => {
     try {
         const since = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-        return await AuditLog.find({
+        return await PaymentAuditLog.find({
             createdAt: { $gte: since },
             $or: [
                 { status: 'failure' },
@@ -213,7 +214,7 @@ const cleanupOldAuditLogs = async (days = 90) => {
     try {
         const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-        const result = await AuditLog.deleteMany({
+        const result = await PaymentAuditLog.deleteMany({
             createdAt: { $lt: cutoffDate }
         });
 
@@ -234,7 +235,7 @@ const getAuditStatistics = async (hours = 24) => {
     try {
         const since = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-        const stats = await AuditLog.aggregate([
+        const stats = await PaymentAuditLog.aggregate([
             { $match: { createdAt: { $gte: since } } },
             {
                 $group: {
@@ -255,7 +256,7 @@ const getAuditStatistics = async (hours = 24) => {
 };
 
 module.exports = {
-    AuditLog,
+    PaymentAuditLog,
     logPaymentEvent,
     getTransactionAuditTrail,
     getUserAuditLogs,

@@ -58,4 +58,6 @@ AuditLogSchema.index({ userId: 1, timestamp: -1 });
 // TTL index - automatically delete logs older than 90 days
 AuditLogSchema.index({ timestamp: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
 
-module.exports = mongoose.model('AuditLog', AuditLogSchema);
+// Check if model already exists to prevent OverwriteModelError
+module.exports = mongoose.models.AuditLog || mongoose.model('AuditLog', AuditLogSchema);
+
