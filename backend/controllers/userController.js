@@ -14,6 +14,7 @@ const {
     getCookieOptions,
     parseDeviceInfo
 } = require('../utils/tokenUtils');
+const { logActivity } = require('../utils/activityLogger');
 
 
 exports.registerUser = async (req, res) => {
@@ -63,6 +64,17 @@ exports.registerUser = async (req, res) => {
         });
 
         await newUser.save();
+
+        // Log registration activity
+        await logActivity({
+            userId: newUser._id,
+            action: 'user_register',
+            category: 'auth',
+            metadata: { email, firstName, lastName },
+            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+            userAgent: req.headers['user-agent'],
+            status: 'success'
+        });
 
         return res.status(201).json({
             success: true,
@@ -130,6 +142,18 @@ exports.loginUser = async (req, res) => {
                 user.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60 * 1000);
                 await user.save();
 
+                // Log failed login with account lock
+                await logActivity({
+                    userId: user._id,
+                    action: 'login_failed',
+                    category: 'auth',
+                    metadata: { reason: 'account_locked', attempts: user.failedLoginAttempts },
+                    ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+                    userAgent: req.headers['user-agent'],
+                    status: 'failure',
+                    errorMessage: 'Account locked due to too many failed attempts'
+                });
+
                 return res.status(403).json({
                     success: false,
                     message: `Account locked due to too many failed login attempts. Try again in ${LOCKOUT_DURATION_MINUTES} minutes.`,
@@ -139,6 +163,18 @@ exports.loginUser = async (req, res) => {
             }
 
             await user.save();
+
+            // Log failed login attempt
+            await logActivity({
+                userId: user._id,
+                action: 'login_failed',
+                category: 'auth',
+                metadata: { reason: 'invalid_password', attempts: user.failedLoginAttempts },
+                ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+                userAgent: req.headers['user-agent'],
+                status: 'failure',
+                errorMessage: 'Invalid credentials'
+            });
 
             return res.status(401).json({
                 success: false,
@@ -243,6 +279,17 @@ exports.loginUser = async (req, res) => {
             };
         }
 
+        // Log successful login
+        await logActivity({
+            userId: user._id,
+            action: user.role === 'admin' ? 'admin_login' : 'user_login',
+            category: 'auth',
+            metadata: { email: user.email, role: user.role },
+            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+            userAgent: req.headers['user-agent'],
+            status: 'success'
+        });
+
         return res.status(200).json(response);
 
     } catch (error) {
@@ -310,6 +357,17 @@ exports.forgotPassword = async (req, res) => {
 
         // Send the OTP via email
         await sendPasswordResetOTP(user.email, otp);
+
+        // Log password reset request
+        await logActivity({
+            userId: user._id,
+            action: 'password_reset_request',
+            category: 'auth',
+            metadata: { email: user.email },
+            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+            userAgent: req.headers['user-agent'],
+            status: 'success'
+        });
 
         res.status(200).json({ success: true, message: 'If an account with that email exists, an OTP has been sent.' });
 
@@ -381,6 +439,17 @@ exports.resetPassword = async (req, res) => {
         user.passwordResetOTP = undefined;
         user.passwordResetExpires = undefined;
         await user.save();
+
+        // Log password reset completion
+        await logActivity({
+            userId: user._id,
+            action: 'password_reset_complete',
+            category: 'auth',
+            metadata: { email: user.email },
+            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+            userAgent: req.headers['user-agent'],
+            status: 'success'
+        });
 
         res.status(200).json({ success: true, message: 'Password has been reset successfully.' });
 
@@ -500,6 +569,17 @@ exports.changePassword = async (req, res) => {
         user.password = hashedPassword;
         updatePasswordExpiry(user);
         await user.save();
+
+        // Log password change
+        await logActivity({
+            userId: user._id,
+            action: 'password_change',
+            category: 'auth',
+            metadata: { email: user.email },
+            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+            userAgent: req.headers['user-agent'],
+            status: 'success'
+        });
 
         res.status(200).json({
             success: true,
