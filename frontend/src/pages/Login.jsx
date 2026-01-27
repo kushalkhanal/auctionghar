@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import api from '../api/axiosConfig';
 import PasswordInput from '../components/PasswordInput';
 import MFAVerificationModal from '../components/MFAVerificationModal';
@@ -11,6 +12,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const toast = useToast();
   const { executeRecaptcha } = useGoogleReCaptcha();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,10 +57,12 @@ export default function Login() {
       }
 
       login(response.data);
+      toast.success('Welcome back! Login successful.');
       navigate(from, { replace: true });
     } catch (err) {
       // Check if password has expired
       if (err.response?.status === 403 && err.response?.data?.passwordExpired) {
+        toast.warning('Your password has expired. Please reset it to continue.');
         navigate('/forgot-password', {
           state: { message: 'Your password has expired. Please reset it to continue.' }
         });
@@ -71,11 +75,14 @@ export default function Login() {
       if (err.response?.data?.accountLocked) {
         const lockoutUntil = new Date(err.response.data.lockoutUntil);
         const minutesRemaining = Math.ceil((lockoutUntil - new Date()) / 60000);
-        setError(`Account locked. Try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''}.`);
+        const errorMsg = `Account locked. Try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''}.`;
+        setError(errorMsg);
+        toast.error(errorMsg);
         return;
       }
 
       setError(message);
+      toast.error(message);
     }
   }, [email, password, executeRecaptcha, navigate, from, login]);
 
@@ -92,11 +99,13 @@ export default function Login() {
 
       // Login with the full token
       login(response);
+      toast.success('MFA verification successful! Welcome back.');
       setShowMFAModal(false);
       navigate(from, { replace: true });
     } catch (err) {
       const message = err.response?.data?.message || 'Invalid verification code';
       setMfaError(message);
+      toast.error(message);
     } finally {
       setMfaLoading(false);
     }
