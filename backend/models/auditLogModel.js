@@ -45,8 +45,8 @@ const AuditLogSchema = new mongoose.Schema({
     errorMessage: String,
     timestamp: {
         type: Date,
-        default: Date.now,
-        index: true // For time-based queries
+        default: Date.now
+        // index removed - using compound and TTL indexes below instead
     }
 }, {
     timestamps: true // Adds createdAt and updatedAt
