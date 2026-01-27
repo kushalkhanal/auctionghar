@@ -9,72 +9,75 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // V V V V V  STEP 1: DEFINE `logout` FIRST (if needed by refetchUser) V V V V V
-  // We define logout here so it can be used in refetchUser's error handling.
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+  // Logout function - now calls backend to clear cookies
+  const logout = async () => {
+    try {
+      // Call backend logout to clear HTTP-only cookies
+      await api.post('/session/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear local storage (for backward compatibility)
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+    }
   };
 
-  // V V V V V  STEP 2: DEFINE `refetchUser` SECOND V V V V V
-  // Now it can safely be called by the useEffect hook below.
+  // Refetch user data
   const refetchUser = useCallback(async () => {
     try {
       const { data } = await api.get('/users/me');
       if (data.success && data.user) {
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
-        return true; // Indicate success
+        return true;
       }
-      return false; // Indicate failure
+      return false;
     } catch (error) {
       console.error("Could not refetch user data:", error.response?.data?.message || error.message);
       if (error.response?.status === 401) {
-        logout();
+        await logout();
       }
-      return false; // Indicate failure
+      return false;
     }
-  }, []); // useCallback dependency array is empty as logout is defined in the same scope
+  }, []);
 
-  // V V V V V  STEP 3: DEFINE `useEffect` THIRD V V V V V
-  // This useEffect runs on initial app load.
+  // Initialize auth on app load
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('token');
       const savedUser = localStorage.getItem('user');
-      
-      if (token) {
-        // If we have a token, try to validate it
+
+      if (token || savedUser) {
+        // Try to validate session (works with both cookies and localStorage)
         try {
           const success = await refetchUser();
           if (!success) {
-            // If token validation failed, clear everything
-            logout();
+            await logout();
           }
         } catch (error) {
-          console.error("Token validation failed:", error);
-          logout();
+          console.error("Session validation failed:", error);
+          await logout();
         }
-      } else if (savedUser) {
-        // If no token but saved user, clear it
-        localStorage.removeItem('user');
       }
-      
+
       setLoading(false);
     };
 
     initializeAuth();
-  }, [refetchUser]); // Dependency array is correct.
+  }, [refetchUser]);
 
-  // V V V V V  STEP 4: DEFINE `login` FOURTH V V V V V
+  // Login function - stores user data
   const login = (userData) => {
-    localStorage.setItem('token', userData.token);
+    // Store token for backward compatibility (cookies are primary now)
+    if (userData.token) {
+      localStorage.setItem('token', userData.token);
+    }
     localStorage.setItem('user', JSON.stringify(userData.user));
     setUser(userData.user);
   };
 
-  // V V V V V  STEP 5: DEFINE THE `value` OBJECT LAST V V V V V
   const value = {
     user,
     setUser,
@@ -82,6 +85,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAuthenticated: !!user,
     refetchUser,
+    loading
   };
 
   return (

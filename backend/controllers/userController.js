@@ -1,5 +1,6 @@
 const User = require("../models/userModel.js");
 const BiddingRoom = require('../models/biddingRoomModel.js');
+const Session = require('../models/sessionModel.js');
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { sendPasswordResetOTP } = require('../services/emailService');
@@ -7,6 +8,12 @@ const otpGenerator = require('otp-generator');
 const { validatePassword, getPasswordErrorMessage, validatePasswordReuse } = require('../utils/passwordValidator');
 const { isPasswordExpired, getDaysUntilExpiration, shouldWarnExpiration, updatePasswordExpiry } = require('../utils/passwordExpiry');
 const { PASSWORD_HISTORY_LIMIT } = require('../config/passwordConfig');
+const {
+    generateAccessToken,
+    generateRefreshToken,
+    getCookieOptions,
+    parseDeviceInfo
+} = require('../utils/tokenUtils');
 
 
 exports.registerUser = async (req, res) => {
@@ -175,20 +182,45 @@ exports.loginUser = async (req, res) => {
             });
         }
 
-        // 5. The JWT payload no longer contains 'username'
-        const token = jwt.sign(
-            {
-                userId: user._id,
-                firstName: user.firstName, // Use firstName for display purposes
-                role: user.role
-            },
-            process.env.JWT_SECRET, { expiresIn: "7d" }
-        );
+        // Generate tokens
+        const tokenPayload = {
+            userId: user._id,
+            firstName: user.firstName,
+            role: user.role
+        };
+
+        const accessToken = generateAccessToken(tokenPayload);
+        const refreshToken = generateRefreshToken({ userId: user._id });
+
+        // Parse device information
+        const userAgent = req.headers['user-agent'];
+        const ip = req.ip || req.connection.remoteAddress;
+        const deviceInfo = {
+            userAgent,
+            ip,
+            ...parseDeviceInfo(userAgent)
+        };
+
+        // Create session record
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+        const session = new Session({
+            userId: user._id,
+            refreshToken,
+            deviceInfo,
+            expiresAt
+        });
+        await session.save();
+
+        // Set HTTP-only cookies
+        const accessTokenExpiry = 15 * 60 * 1000; // 15 minutes
+        const refreshTokenExpiry = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+        res.cookie('accessToken', accessToken, getCookieOptions(accessTokenExpiry));
+        res.cookie('refreshToken', refreshToken, getCookieOptions(refreshTokenExpiry));
 
         // Prepare response with expiry warning if needed
         const response = {
             success: true,
-            token,
             user: {
                 id: user._id,
                 email: user.email,
@@ -198,6 +230,8 @@ exports.loginUser = async (req, res) => {
                 role: user.role,
                 wallet: user.wallet
             },
+            // Still send token for backward compatibility (will be removed later)
+            token: accessToken
         };
 
         // Add password expiry warning if approaching expiration

@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const connectDB = require('./config/db.js');
@@ -19,6 +20,7 @@ const profileRoutes = require('./routes/profileRoutes.js');
 const notificationRoutes = require('./routes/notificationRoutes.js');
 const mfaRoutes = require('./routes/mfaRoutes.js');
 const rbacRoutes = require('./routes/rbacRoutes.js');
+const sessionRoutes = require('./routes/sessionRoutes.js');
 
 // Create Express app
 const app = express();
@@ -27,8 +29,12 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Core Middlewares
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true // Allow cookies to be sent
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 // Static folder for uploads
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
@@ -42,6 +48,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/mfa', mfaRoutes);
 app.use('/api/rbac', rbacRoutes);
+app.use('/api/session', sessionRoutes);
 
 // Admin Routes - Protected with authentication
 // RBAC permissions are applied within each route file
