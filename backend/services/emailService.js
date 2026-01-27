@@ -19,21 +19,21 @@ const transporter = nodemailer.createTransport({
  * @param {string} otp - The one-time password.
  */
 const sendPasswordResetOTP = async (to, otp) => {
-    
+
     try {
         const mailOptions = {
             // IMPORTANT: The 'from' address MUST be the same as your authenticated user
-            from: `"Bidding Bazar" <${process.env.EMAIL_USER}>`,
+            from: `"AuctionGhar" <${process.env.EMAIL_USER}>`,
             to: to,
             subject: 'Your Password Reset OTP',
             html: `
                 <div style="font-family: Arial, sans-serif; color: #333;">
                     <h2>Password Reset Request</h2>
                     <p>Hello,</p>
-                    <p>You requested a password reset for your Bidding Bazar account. Use the following One-Time Password (OTP) to proceed.</p>
+                    <p>You requested a password reset for your AuctionGhar account. Use the following One-Time Password (OTP) to proceed.</p>
                     <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px; margin: 20px 0;">${otp}</p>
                     <p>This OTP is valid for 10 minutes. If you did not request this, please ignore this email.</p>
-                    <p>Thank you,<br/>The Bidding Bazar Team</p>
+                    <p>Thank you,<br/>The AuctionGhar Team</p>
                 </div>
             `,
         }

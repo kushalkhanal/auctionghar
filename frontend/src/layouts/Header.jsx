@@ -6,6 +6,7 @@ import ProfileDropdown from '../components/ProfileDropdown'; // Ensure this path
 import NotificationBell from '../components/NotificationBell';
 import CanAccess from '../components/CanAccess';
 import { ROLES } from '../constants/permissions';
+import logo from '../assets/logo auction ghar.png';
 
 const Header = () => {
     const { isAuthenticated, user, logout } = useAuth();
@@ -21,8 +22,8 @@ const Header = () => {
     return (
         <header className="bg-white/90 backdrop-blur-md shadow-sm sticky top-0 z-50">
             <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-                <NavLink to="/" className="text-2xl font-bold text-primary-dark tracking-tight">
-                    Bidding Bazar
+                <NavLink to="/" className="flex items-center gap-2">
+                    <img src={logo} alt="AuctionGhar" className="h-10 w-auto" />
                 </NavLink>
 
                 <nav className="space-x-2 sm:space-x-4 flex items-center">
