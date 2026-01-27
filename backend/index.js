@@ -21,6 +21,7 @@ const notificationRoutes = require('./routes/notificationRoutes.js');
 const mfaRoutes = require('./routes/mfaRoutes.js');
 const rbacRoutes = require('./routes/rbacRoutes.js');
 const sessionRoutes = require('./routes/sessionRoutes.js');
+const activityRoutes = require('./routes/activityRoutes.js');
 
 // Create Express app
 const app = express();
@@ -49,6 +50,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/mfa', mfaRoutes);
 app.use('/api/rbac', rbacRoutes);
 app.use('/api/session', sessionRoutes);
+app.use('/api/activity', activityRoutes);
 
 // Admin Routes - Protected with authentication
 // RBAC permissions are applied within each route file
