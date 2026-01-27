@@ -1,17 +1,20 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { usePermissions } from '../context/PermissionContext';
 
 const AdminRoute = () => {
-    const { user, isAuthenticated, loading } = useAuth();
+    const { isAuthenticated, loading: authLoading } = useAuth();
+    const { hasRole, loading: permLoading } = usePermissions();
 
-
-    if (loading) {
+    if (authLoading || permLoading) {
         return <div className="flex justify-center items-center h-screen">Loading...</div>;
     }
 
+    // Allow moderator, admin, and superadmin roles
+    const isAdminUser = isAuthenticated && hasRole('moderator', 'admin', 'superadmin');
 
-    return isAuthenticated && user?.role === 'admin' ? (
+    return isAdminUser ? (
         <Outlet />
     ) : (
         <Navigate to="/" replace />

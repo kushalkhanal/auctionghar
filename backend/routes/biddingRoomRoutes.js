@@ -5,7 +5,7 @@ const router = express.Router();
 
 
 // We need to import ALL the functions used in this file from the biddingController.
-const { 
+const {
     getAllPublicBiddingRooms,
     getBiddingRoomById,
     placeBid,
@@ -15,6 +15,8 @@ const {
 
 const { protect } = require('../middlewares/authMiddleware.js');
 const { productImagesUpload } = require('../middlewares/uploadMiddleware.js');
+const { hasPermission } = require('../middlewares/rbacMiddleware.js');
+const { PERMISSIONS } = require('../config/permissions.js');
 
 // --- PUBLIC ROUTES (anyone can access) ---
 // GET /api/bidding-rooms/
@@ -27,11 +29,11 @@ router.get('/:id', getBiddingRoomById);
 
 
 // POST /api/bidding-rooms/ - Creates a new listing for the logged-in user
-// This route will now work because 'createBiddingRoom' is correctly imported.
-// router.post('/', protect, productImagesUpload, createBiddingRoom);
-router.post('/', protect, createBiddingRoom);
+// Requires BIDDING_CREATE permission
+router.post('/', protect, hasPermission(PERMISSIONS.BIDDING_CREATE), createBiddingRoom);
 
 // POST /api/bidding-rooms/:id/bids - Places a new bid
-router.post('/:id/bids', protect, placeBid);
+// Requires BIDS_CREATE permission
+router.post('/:id/bids', protect, hasPermission(PERMISSIONS.BIDS_CREATE), placeBid);
 
 module.exports = router;

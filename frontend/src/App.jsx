@@ -1,5 +1,6 @@
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { PermissionProvider } from "./context/PermissionContext";
 import AppRouter from "./routers/AppRouter";
 import { SocketProvider } from "./context/SocketContext";
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
@@ -18,11 +19,13 @@ function App() {
       }}
     >
       <AuthProvider>
-        <SocketProvider>
-          <BrowserRouter>
-            <AppRouter />
-          </BrowserRouter>
-        </SocketProvider>
+        <PermissionProvider>
+          <SocketProvider>
+            <BrowserRouter>
+              <AppRouter />
+            </BrowserRouter>
+          </SocketProvider>
+        </PermissionProvider>
       </AuthProvider>
     </GoogleReCaptchaProvider>
   );

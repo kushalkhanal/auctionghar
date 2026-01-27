@@ -1,10 +1,15 @@
 import React from 'react';
 import { NavLink } from "react-router-dom";
 import { useAuth } from '../context/AuthContext';
+import { usePermissions } from '../context/PermissionContext';
 import ProfileDropdown from '../components/ProfileDropdown'; // Ensure this path is correct
 import NotificationBell from '../components/NotificationBell';
+import CanAccess from '../components/CanAccess';
+import { ROLES } from '../constants/permissions';
+
 const Header = () => {
     const { isAuthenticated, user, logout } = useAuth();
+    const { isModerator } = usePermissions();
 
 
     const navLinkClass = ({ isActive }) =>
@@ -39,12 +44,12 @@ const Header = () => {
                             </NavLink>
                             <NotificationBell />
 
-                            {/* The Admin Panel link, visible ONLY to admins */}
-                            {user.role === 'admin' && (
+                            {/* The Admin Panel link, visible to moderators, admins, and superadmins */}
+                            <CanAccess role={[ROLES.MODERATOR, ROLES.ADMIN, ROLES.SUPERADMIN]}>
                                 <NavLink to="/admin/dashboard" className="font-medium text-accent-dark hover:text-accent transition-colors duration-300 text-sm sm:text-base">
                                     Admin Panel
                                 </NavLink>
-                            )}
+                            </CanAccess>
 
                             {/* The user's profile dropdown, which contains the logout button */}
                             <ProfileDropdown user={user} onLogout={logout} />
