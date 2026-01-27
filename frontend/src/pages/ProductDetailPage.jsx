@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { useSocket } from '../context/SocketContext';
 import api from '../api/axiosConfig';
 import { ClockIcon, UserIcon, EyeIcon, MagnifyingGlassIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
@@ -15,7 +16,7 @@ const calculateTimeLeft = (endTime) => {
         minutes: Math.floor((difference / 1000 / 60) % 60),
         seconds: Math.floor((difference / 1000) % 60)
     };
-    
+
     if (timeLeft.days > 0) return `${timeLeft.days}d ${timeLeft.hours}h left`;
     if (timeLeft.hours > 0) return `${timeLeft.hours}h ${timeLeft.minutes}m left`;
     if (timeLeft.minutes > 0) return `${timeLeft.minutes}m ${timeLeft.seconds}s left`;
@@ -26,8 +27,9 @@ const ProductDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const toast = useToast();
     const { socket, isConnected } = useSocket();
-    
+
     const [room, setRoom] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -40,7 +42,7 @@ const ProductDetailPage = () => {
     const [isZoomed, setIsZoomed] = useState(false);
 
     const VITE_BACKEND_URL = 'http://localhost:5050';
-    const imageUrls = room?.imageUrls && room.imageUrls.length > 0 
+    const imageUrls = room?.imageUrls && room.imageUrls.length > 0
         ? room.imageUrls.map(url => `${VITE_BACKEND_URL}${url}`)
         : [`${VITE_BACKEND_URL}/uploads/default-avatar.png`];
 
@@ -75,12 +77,21 @@ const ProductDetailPage = () => {
         if (!isConnected || !socket || !room) return;
 
         socket.emit('join_product_room', room._id);
-        
+
         socket.on('bid_update', (updatedRoom) => {
             setRoom(updatedRoom);
             setBidAmount(Math.ceil(updatedRoom.currentPrice + 1));
-            setBidSuccess('Bid placed successfully!');
-            setTimeout(() => setBidSuccess(''), 3000);
+
+            // Show toast if another user placed a bid
+            if (updatedRoom.bids && updatedRoom.bids.length > 0) {
+                const latestBid = updatedRoom.bids[0];
+                const latestBidderId = latestBid.bidder?._id || latestBid.bidder;
+
+                // Only show toast if the latest bidder is not the current user
+                if (latestBidderId !== user?.id) {
+                    toast.warning(`You've been outbid! New bid: Npr ${updatedRoom.currentPrice.toLocaleString()}`);
+                }
+            }
         });
 
         return () => {
@@ -98,23 +109,30 @@ const ProductDetailPage = () => {
 
         const bidAmountNum = parseFloat(bidAmount);
         if (isNaN(bidAmountNum) || bidAmountNum <= room.currentPrice) {
-            setBidError(`Bid must be higher than current price: Npr ${room.currentPrice}`);
+            const errorMsg = `Bid must be higher than current price: Npr ${room.currentPrice}`;
+            setBidError(errorMsg);
+            toast.error(errorMsg);
             return;
         }
 
         const isAuctionEnded = timeLeft === "Auction Ended";
         if (isAuctionEnded) {
-            setBidError('This auction has ended.');
+            const errorMsg = 'This auction has ended.';
+            setBidError(errorMsg);
+            toast.error(errorMsg);
             return;
         }
-        
+
         try {
             const { data } = await api.post(`/bidding-rooms/${id}/bids`, { amount: bidAmount });
             setBidSuccess(data.message);
+            toast.success('Bid placed successfully!');
             setRoom(data.room);
             setBidAmount(Math.ceil(data.room.currentPrice + 1));
         } catch (err) {
-            setBidError(err.response?.data?.message || 'An error occurred while placing your bid.');
+            const errorMsg = err.response?.data?.message || 'An error occurred while placing your bid.';
+            setBidError(errorMsg);
+            toast.error(errorMsg);
         }
     };
 
@@ -150,12 +168,11 @@ const ProductDetailPage = () => {
                                 <img
                                     src={imageUrls[selectedImageIndex]}
                                     alt={room.name}
-                                    className={`w-full h-auto max-h-[500px] object-contain transition-all duration-300 ${
-                                        isZoomed ? 'scale-110' : 'scale-100'
-                                    }`}
+                                    className={`w-full h-auto max-h-[500px] object-contain transition-all duration-300 ${isZoomed ? 'scale-110' : 'scale-100'
+                                        }`}
                                     onDoubleClick={() => setIsZoomed(!isZoomed)}
                                 />
-                                
+
                                 {/* Image Navigation Arrows */}
                                 {imageUrls.length > 1 && (
                                     <>
@@ -208,11 +225,10 @@ const ProductDetailPage = () => {
                                     <button
                                         key={index}
                                         onClick={() => goToImage(index)}
-                                        className={`relative rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
-                                            selectedImageIndex === index 
-                                                ? 'border-primary ring-2 ring-primary/20' 
+                                        className={`relative rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${selectedImageIndex === index
+                                                ? 'border-primary ring-2 ring-primary/20'
                                                 : 'border-gray-200 hover:border-gray-300'
-                                        }`}
+                                            }`}
                                     >
                                         <img
                                             src={imgUrl}
@@ -266,7 +282,7 @@ const ProductDetailPage = () => {
 
                         {/* Bidding Form Block */}
                         <div className="p-6 bg-white rounded-lg shadow-inner border">
-                            
+
                             {isAuctionEnded ? (
                                 <div className="p-4 bg-red-100 text-red-700 rounded-lg text-center font-semibold">
                                     <div className="flex items-center justify-center">
@@ -301,19 +317,19 @@ const ProductDetailPage = () => {
                                             Minimum bid: Npr {(room.currentPrice + 1).toLocaleString()}
                                         </p>
                                     </div>
-                                    
+
                                     {bidError && (
                                         <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
                                             {bidError}
                                         </div>
                                     )}
-                                    
+
                                     {bidSuccess && (
                                         <div className="p-3 bg-green-100 text-green-700 rounded-lg text-sm">
                                             {bidSuccess}
                                         </div>
                                     )}
-                                    
+
                                     <button
                                         type="submit"
                                         className="w-full py-3 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105"
@@ -373,13 +389,13 @@ const ProductDetailPage = () => {
                         >
                             <XMarkIcon className="h-6 w-6" />
                         </button>
-                        
+
                         <img
                             src={imageUrls[selectedImageIndex]}
                             alt={room.name}
                             className="max-w-full max-h-full object-contain"
                         />
-                        
+
                         {imageUrls.length > 1 && (
                             <>
                                 <button

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import api from '../api/axiosConfig';
 import PasswordInput from '../components/PasswordInput';
 
 export default function ChangePasswordPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const toast = useToast();
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -21,13 +23,17 @@ export default function ChangePasswordPage() {
 
         // Validate passwords match
         if (newPassword !== confirmPassword) {
-            setError('New passwords do not match.');
+            const errorMsg = 'New passwords do not match.';
+            setError(errorMsg);
+            toast.error(errorMsg);
             return;
         }
 
         // Validate new password is different from current
         if (currentPassword === newPassword) {
-            setError('New password must be different from current password.');
+            const errorMsg = 'New password must be different from current password.';
+            setError(errorMsg);
+            toast.error(errorMsg);
             return;
         }
 
@@ -40,6 +46,7 @@ export default function ChangePasswordPage() {
             });
 
             setSuccess(response.data.message || 'Password changed successfully!');
+            toast.success('Password changed successfully! Redirecting...');
 
             // Clear form
             setCurrentPassword('');
@@ -54,6 +61,7 @@ export default function ChangePasswordPage() {
         } catch (err) {
             const message = err.response?.data?.message || 'Failed to change password. Please try again.';
             setError(message);
+            toast.error(message);
         } finally {
             setLoading(false);
         }
