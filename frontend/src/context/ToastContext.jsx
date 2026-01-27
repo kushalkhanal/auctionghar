@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { ToastContainer } from '../components/Toast';
+import { useAuth } from './AuthContext';
 
 const ToastContext = createContext(null);
 
 export const ToastProvider = ({ children }) => {
     const [toasts, setToasts] = useState([]);
+    const auth = useAuth();
 
     const addToast = useCallback((message, type = 'info', options = {}) => {
         const id = Date.now() + Math.random();
@@ -59,6 +61,13 @@ export const ToastProvider = ({ children }) => {
         info,
         removeToast
     };
+
+    // Connect toast context to AuthContext
+    useEffect(() => {
+        if (auth && auth.setToastContext) {
+            auth.setToastContext({ success, error, warning, info });
+        }
+    }, [auth, success, error, warning, info]);
 
     return (
         <ToastContext.Provider value={value}>

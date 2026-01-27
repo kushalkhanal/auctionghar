@@ -8,6 +8,7 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [toastContext, setToastContext] = useState(null);
 
   // Logout function - now calls backend to clear cookies
   const logout = async () => {
@@ -21,6 +22,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       setUser(null);
+
+      // Show toast notification if available
+      if (toastContext) {
+        toastContext.info('You have been logged out.');
+      }
     }
   };
 
@@ -85,7 +91,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAuthenticated: !!user,
     refetchUser,
-    loading
+    loading,
+    setToastContext
   };
 
   return (

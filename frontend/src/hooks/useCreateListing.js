@@ -2,9 +2,11 @@
 import { useState } from 'react';
 import api from '../api/axiosConfig';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 
 export const useCreateListing = () => {
     const navigate = useNavigate();
+    const toast = useToast();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -13,7 +15,9 @@ export const useCreateListing = () => {
         setError(null);
 
         if (!productImages || productImages.length === 0) {
-            setError('Please upload at least one image for your item.');
+            const errorMsg = 'Please upload at least one image for your item.';
+            setError(errorMsg);
+            toast.error(errorMsg);
             setLoading(false);
             return;
         }
@@ -30,11 +34,13 @@ export const useCreateListing = () => {
 
         try {
             await api.post('/bidding-rooms', submissionData);
+            toast.success('Auction created successfully!');
             navigate('/profile');
         } catch (err) {
             // This line correctly grabs the specific error message from the backend
             const errorMessage = err.response?.data?.message || 'Failed to create your listing.';
             setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
