@@ -11,24 +11,36 @@ exports.getAllPublicBiddingRooms = async (req, res) => {
         const limit = parseInt(req.query.limit) || 8;
         const skip = (page - 1) * limit;
 
-        // 2. Build the filter object based on the search query
+        // 2. Build the filter object based on query parameters
         const searchQuery = req.query.search
             ? {
-                name: {
-                    $regex: req.query.search, // Use regex for "contains" matching
-                    $options: 'i'             // 'i' for case-insensitive
-                }
+                $or: [
+                    { name: { $regex: req.query.search, $options: 'i' } },
+                    { description: { $regex: req.query.search, $options: 'i' } },
+                    { tags: { $regex: req.query.search, $options: 'i' } }
+                ]
             }
+            : {};
+
+        // Category filter
+        const categoryFilter = req.query.category && req.query.category !== 'all'
+            ? { category: req.query.category }
+            : {};
+
+        // Tags filter (match any of the provided tags)
+        const tagsFilter = req.query.tags
+            ? { tags: { $in: req.query.tags.split(',').map(t => t.trim()) } }
             : {};
 
         // Calculate the cutoff time (12 hours ago from now)
         // This ensures ended auctions are only visible for 12 hours after ending
         const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
 
-        // Combine the search filter with the requirement that rooms must be 'active'
-        // AND either not ended OR ended less than 12 hours ago
+        // Combine all filters
         const filter = {
             ...searchQuery,
+            ...categoryFilter,
+            ...tagsFilter,
             status: 'active',
             $or: [
                 { endTime: { $gt: new Date() } }, // Not ended yet (still active)
@@ -325,5 +337,51 @@ exports.placeBid = async (req, res) => {
     } catch (error) {
         console.error("PLACE BID ERROR:", error);
         res.status(500).json({ message: "Server Error" });
+    }
+};
+
+// --- GET CATEGORY STATISTICS ---
+exports.getCategoryStats = async (req, res) => {
+    try {
+        const stats = await BiddingRoom.aggregate([
+            { $match: { status: 'active' } },
+            {
+                $group: {
+                    _id: '$category',
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { count: -1 } }
+        ]);
+
+        res.status(200).json(stats);
+    } catch (error) {
+        console.error('Error fetching category stats:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// --- GET POPULAR TAGS ---
+exports.getPopularTags = async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 20;
+
+        const tags = await BiddingRoom.aggregate([
+            { $match: { status: 'active' } },
+            { $unwind: '$tags' },
+            {
+                $group: {
+                    _id: '$tags',
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { count: -1 } },
+            { $limit: limit }
+        ]);
+
+        res.status(200).json(tags);
+    } catch (error) {
+        console.error('Error fetching popular tags:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 };

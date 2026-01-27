@@ -13,7 +13,7 @@ const calculateTimeLeft = (endTime) => {
         minutes: Math.floor((difference / 1000 / 60) % 60),
         seconds: Math.floor((difference / 1000) % 60)
     };
-    
+
     if (timeLeft.days > 0) return `${timeLeft.days}d ${timeLeft.hours}h left`;
     if (timeLeft.hours > 0) return `${timeLeft.hours}h ${timeLeft.minutes}m left`;
     if (timeLeft.minutes > 0) return `${timeLeft.minutes}m ${timeLeft.seconds}s left`;
@@ -34,7 +34,7 @@ const ProductCard = ({ room }) => {
     }, [room.endTime]);
 
     const VITE_BACKEND_URL = 'http://localhost:5050';
-    const imageUrls = room.imageUrls && room.imageUrls.length > 0 
+    const imageUrls = room.imageUrls && room.imageUrls.length > 0
         ? room.imageUrls.map(url => `${VITE_BACKEND_URL}${url}`)
         : [`${VITE_BACKEND_URL}/uploads/default-avatar.png`];
 
@@ -54,19 +54,19 @@ const ProductCard = ({ room }) => {
     };
 
     return (
-        <div 
+        <div
             className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden transform hover:-translate-y-2 card-hover"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* Image Container with Carousel */}
             <div className="relative overflow-hidden">
-                <img 
-                    src={imageUrls[currentImageIndex]} 
-                    alt={room.name} 
-                    className="w-full h-64 object-cover transition-transform duration-700 group-hover:scale-110" 
+                <img
+                    src={imageUrls[currentImageIndex]}
+                    alt={room.name}
+                    className="w-full h-64 object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                
+
                 {/* Image Navigation Arrows (only show if multiple images) */}
                 {imageUrls.length > 1 && (
                     <>
@@ -91,13 +91,12 @@ const ProductCard = ({ room }) => {
                         {currentImageIndex + 1} / {imageUrls.length}
                     </div>
                 )}
-                
+
                 {/* Overlay on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${
-                    isHovered ? 'opacity-100' : 'opacity-0'
-                }`}>
+                <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'
+                    }`}>
                     <div className="absolute bottom-4 left-4 right-4">
-                        <Link 
+                        <Link
                             to={`/bidding-rooms/${room._id}`}
                             className="inline-flex items-center justify-center w-full px-4 py-2 bg-white/90 backdrop-blur-sm text-primary font-semibold rounded-full hover:bg-white transition-all duration-300 transform hover:scale-105"
                         >
@@ -108,32 +107,29 @@ const ProductCard = ({ room }) => {
                 </div>
 
                 {/* Timer Badge */}
-                <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1 transition-all duration-300 ${
-                    isAuctionEnded 
-                        ? 'bg-red-500 text-white' 
-                        : isUrgent 
-                            ? 'bg-orange-500 text-white animate-pulse' 
+                <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1 transition-all duration-300 ${isAuctionEnded
+                        ? 'bg-red-500 text-white'
+                        : isUrgent
+                            ? 'bg-orange-500 text-white animate-pulse'
                             : 'bg-white/90 backdrop-blur-sm text-primary-dark'
-                }`}>
+                    }`}>
                     <ClockIcon className="h-4 w-4" />
                     <span>{timeLeft}</span>
                 </div>
 
                 {/* Like Button */}
-                <button 
+                <button
                     onClick={(e) => {
                         e.preventDefault();
                         setIsLiked(!isLiked);
                     }}
-                    className={`absolute top-3 left-3 p-2 rounded-full transition-all duration-300 transform hover:scale-110 ${
-                        isLiked 
-                            ? 'bg-red-500 text-white' 
+                    className={`absolute top-3 left-3 p-2 rounded-full transition-all duration-300 transform hover:scale-110 ${isLiked
+                            ? 'bg-red-500 text-white'
                             : 'bg-white/90 backdrop-blur-sm text-gray-600 hover:bg-red-500 hover:text-white'
-                    }`}
+                        }`}
                 >
-                    <HeartIcon className={`h-4 w-4 transition-all duration-300 ${
-                        isLiked ? 'fill-current' : ''
-                    }`} />
+                    <HeartIcon className={`h-4 w-4 transition-all duration-300 ${isLiked ? 'fill-current' : ''
+                        }`} />
                 </button>
 
                 {/* Bid Count Badge */}
@@ -152,11 +148,10 @@ const ProductCard = ({ room }) => {
                             <button
                                 key={index}
                                 onClick={() => goToImage(index)}
-                                className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
-                                    index === currentImageIndex 
-                                        ? 'border-primary' 
+                                className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
+                                        ? 'border-primary'
                                         : 'border-transparent hover:border-gray-300'
-                                }`}
+                                    }`}
                             >
                                 <img
                                     src={url}
@@ -176,7 +171,7 @@ const ProductCard = ({ room }) => {
                         {room.name}
                     </h3>
                 </Link>
-                
+
                 {/* Seller Info */}
                 <div className="flex items-center mb-4">
                     <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center mr-2">
@@ -186,6 +181,31 @@ const ProductCard = ({ room }) => {
                         {room.seller ? `${room.seller.firstName} ${room.seller.lastName}` : 'Unknown Seller'}
                     </p>
                 </div>
+
+                {/* Category Badge */}
+                {room.category && (
+                    <div className="mb-3">
+                        <span className="inline-block px-3 py-1 bg-gradient-to-r from-primary/10 to-primary/5 text-primary text-xs font-semibold rounded-full border border-primary/20">
+                            {room.category}
+                        </span>
+                    </div>
+                )}
+
+                {/* Tags */}
+                {room.tags && room.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                        {room.tags.slice(0, 3).map((tag, i) => (
+                            <span key={i} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded hover:bg-gray-200 transition-colors">
+                                #{tag}
+                            </span>
+                        ))}
+                        {room.tags.length > 3 && (
+                            <span className="px-2 py-1 text-gray-500 text-xs">
+                                +{room.tags.length - 3}
+                            </span>
+                        )}
+                    </div>
+                )}
 
                 {/* Price Section */}
                 <div className="border-t border-gray-100 pt-4">
@@ -203,7 +223,7 @@ const ProductCard = ({ room }) => {
                 </div>
 
                 {/* Action Button */}
-                <Link 
+                <Link
                     to={`/bidding-rooms/${room._id}`}
                     className="mt-4 w-full inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105 group-hover:shadow-primary/25"
                 >

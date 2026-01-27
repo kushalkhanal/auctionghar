@@ -7,9 +7,11 @@ const router = express.Router();
 // We need to import ALL the functions used in this file from the biddingController.
 const {
     getAllPublicBiddingRooms,
+    createBiddingRoom,
     getBiddingRoomById,
     placeBid,
-    createBiddingRoom // <-- This was missing from the import
+    getCategoryStats,
+    getPopularTags
 } = require('../controllers/biddingController.js');
 
 
@@ -21,6 +23,12 @@ const { PERMISSIONS } = require('../config/permissions.js');
 // --- PUBLIC ROUTES (anyone can access) ---
 // GET /api/bidding-rooms/
 router.get('/', getAllPublicBiddingRooms);
+
+// GET /api/bidding-rooms/categories/stats
+router.get('/categories/stats', getCategoryStats);
+
+// GET /api/bidding-rooms/tags/popular
+router.get('/tags/popular', getPopularTags);
 
 // GET /api/bidding-rooms/:id
 router.get('/:id', getBiddingRoomById);

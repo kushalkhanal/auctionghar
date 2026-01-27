@@ -9,6 +9,35 @@ const biddingRoomSchema = new mongoose.Schema({
     endTime: { type: Date, required: true },
     seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     status: { type: String, enum: ['active', 'sold', 'expired'], default: 'active' },
+    category: {
+        type: String,
+        required: true,
+        enum: [
+            'Electronics',
+            'Fashion',
+            'Home & Garden',
+            'Sports & Outdoors',
+            'Collectibles',
+            'Art',
+            'Jewelry',
+            'Vehicles',
+            'Books & Media',
+            'Toys & Games',
+            'Other'
+        ],
+        default: 'Other',
+        index: true
+    },
+    tags: {
+        type: [String],
+        default: [],
+        validate: {
+            validator: function (tags) {
+                return tags.length <= 10;
+            },
+            message: 'Maximum 10 tags allowed'
+        }
+    },
     bids: [{
         bidder: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         amount: { type: Number, required: true },
@@ -16,6 +45,11 @@ const biddingRoomSchema = new mongoose.Schema({
     }]
 }, { timestamps: true });
 
+
+// Indexes for efficient querying
+biddingRoomSchema.index({ category: 1, status: 1 });
+biddingRoomSchema.index({ tags: 1 });
+biddingRoomSchema.index({ status: 1, createdAt: -1 });
 
 // A pre-save hook to ensure the starting price is set as the initial current price
 biddingRoomSchema.pre('save', function (next) {
