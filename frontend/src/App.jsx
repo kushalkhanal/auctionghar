@@ -3,6 +3,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { PermissionProvider } from "./context/PermissionContext";
 import AppRouter from "./routers/AppRouter";
 import { SocketProvider } from "./context/SocketContext";
+import { ToastProvider } from "./context/ToastContext";
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 
 // Replace with your actual reCAPTCHA v3 site key
@@ -18,15 +19,17 @@ function App() {
         appendTo: 'head',
       }}
     >
-      <AuthProvider>
-        <PermissionProvider>
-          <SocketProvider>
-            <BrowserRouter>
-              <AppRouter />
-            </BrowserRouter>
-          </SocketProvider>
-        </PermissionProvider>
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <PermissionProvider>
+            <SocketProvider>
+              <BrowserRouter>
+                <AppRouter />
+              </BrowserRouter>
+            </SocketProvider>
+          </PermissionProvider>
+        </AuthProvider>
+      </ToastProvider>
     </GoogleReCaptchaProvider>
   );
 }

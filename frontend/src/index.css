@@ -8,6 +8,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -19,6 +20,7 @@
     opacity: 0;
     transform: translateX(-30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -30,6 +32,7 @@
     opacity: 0;
     transform: translateX(30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -41,6 +44,7 @@
     opacity: 0;
     transform: scale(0.8);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -52,6 +56,7 @@
     opacity: 0;
     transform: translateY(50px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -59,18 +64,24 @@
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-10px);
   }
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
   }
+
   50% {
     box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
   }
@@ -80,6 +91,7 @@
   0% {
     background-position: -200px 0;
   }
+
   100% {
     background-position: calc(200px + 100%) 0;
   }
@@ -195,7 +207,7 @@
   .mobile-text-center {
     text-align: center;
   }
-  
+
   .mobile-padding {
     padding-left: 1rem;
     padding-right: 1rem;
@@ -271,32 +283,70 @@ textarea:focus {
   opacity: 0;
 }
 
-.text-reveal span:nth-child(1) { animation-delay: 0.1s; }
-.text-reveal span:nth-child(2) { animation-delay: 0.2s; }
-.text-reveal span:nth-child(3) { animation-delay: 0.3s; }
-.text-reveal span:nth-child(4) { animation-delay: 0.4s; }
-.text-reveal span:nth-child(5) { animation-delay: 0.5s; }
+.text-reveal span:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.text-reveal span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.text-reveal span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.text-reveal span:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.text-reveal span:nth-child(5) {
+  animation-delay: 0.5s;
+}
 
 /* Stagger animation for grid items */
-.stagger-animation > * {
+.stagger-animation>* {
   opacity: 0;
   animation: fadeInUp 0.6s ease-out forwards;
 }
 
-.stagger-animation > *:nth-child(1) { animation-delay: 0.1s; }
-.stagger-animation > *:nth-child(2) { animation-delay: 0.2s; }
-.stagger-animation > *:nth-child(3) { animation-delay: 0.3s; }
-.stagger-animation > *:nth-child(4) { animation-delay: 0.4s; }
-.stagger-animation > *:nth-child(5) { animation-delay: 0.5s; }
-.stagger-animation > *:nth-child(6) { animation-delay: 0.6s; }
-.stagger-animation > *:nth-child(7) { animation-delay: 0.7s; }
-.stagger-animation > *:nth-child(8) { animation-delay: 0.8s; }
+.stagger-animation>*:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.stagger-animation>*:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.stagger-animation>*:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.stagger-animation>*:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.stagger-animation>*:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+.stagger-animation>*:nth-child(6) {
+  animation-delay: 0.6s;
+}
+
+.stagger-animation>*:nth-child(7) {
+  animation-delay: 0.7s;
+}
+
+.stagger-animation>*:nth-child(8) {
+  animation-delay: 0.8s;
+}
 
 /* Toast notification animations */
 @keyframes shrink {
   from {
     width: 100%;
   }
+
   to {
     width: 0%;
   }
@@ -312,9 +362,11 @@ textarea:focus {
     transform: scale(0);
     opacity: 0;
   }
+
   50% {
     transform: scale(1.1);
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -327,13 +379,24 @@ textarea:focus {
 
 /* Shake animation for errors */
 @keyframes shake {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateX(0);
   }
-  10%, 30%, 50%, 70%, 90% {
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
     transform: translateX(-5px);
   }
-  20%, 40%, 60%, 80% {
+
+  20%,
+  40%,
+  60%,
+  80% {
     transform: translateX(5px);
   }
 }
@@ -347,9 +410,11 @@ textarea:focus {
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -366,6 +431,7 @@ textarea:focus {
     transform: scale(0);
     opacity: 1;
   }
+
   100% {
     transform: scale(4);
     opacity: 0;
@@ -374,4 +440,19 @@ textarea:focus {
 
 .animate-ripple {
   animation: ripple 0.6s ease-out;
+}
+
+/* Toast mobile responsiveness */
+@media (max-width: 640px) {
+  .toast-container {
+    top: 1rem;
+    right: 1rem;
+    left: 1rem;
+    max-width: 100%;
+  }
+
+  .toast-item {
+    min-width: 100%;
+    max-width: 100%;
+  }
 }

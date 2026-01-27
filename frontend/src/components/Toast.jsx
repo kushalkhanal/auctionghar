@@ -50,7 +50,7 @@ const Toast = ({ type = 'info', message, onClose, autoClose = true, duration = 5
             className={`transform transition-all duration-300 ease-out ${isVisible ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95'
                 }`}
         >
-            <div className={`${config.bgColor} text-white rounded-xl shadow-2xl p-4 pr-12 max-w-md min-w-[320px] border-2 ${config.borderColor}`}>
+            <div className={`${config.bgColor} text-white rounded-xl shadow-2xl p-4 pr-12 w-full sm:min-w-[320px] max-w-md border-2 ${config.borderColor}`}>
                 <div className="flex items-start gap-3">
                     <Icon className={`w-6 h-6 ${config.iconColor} flex-shrink-0 mt-0.5`} />
                     <p className="text-sm font-medium leading-relaxed">{message}</p>
@@ -85,7 +85,7 @@ const Toast = ({ type = 'info', message, onClose, autoClose = true, duration = 5
 // Toast Container Component
 export const ToastContainer = ({ toasts, removeToast }) => {
     return (
-        <div className="fixed top-4 right-4 z-50 space-y-3 max-w-md pointer-events-none">
+        <div className="fixed top-4 right-4 left-4 sm:left-auto z-50 space-y-3 max-w-md sm:max-w-md pointer-events-none">
             <div className="space-y-3 pointer-events-auto">
                 {toasts.map((toast) => (
                     <Toast
