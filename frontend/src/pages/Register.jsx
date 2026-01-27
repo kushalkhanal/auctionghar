@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 import api from '../api/axiosConfig';
 import PasswordInput from '../components/PasswordInput';
 import PasswordMatchIndicator from '../components/PasswordMatchIndicator';
@@ -7,6 +8,7 @@ import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 export default function Register() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { executeRecaptcha } = useGoogleReCaptcha();
 
   const [formData, setFormData] = useState({
@@ -33,14 +35,18 @@ export default function Register() {
 
     // Check if passwords match
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      const errorMsg = 'Passwords do not match.';
+      setError(errorMsg);
+      toast.error(errorMsg);
       setLoading(false);
       return;
     }
 
     // Client-Side Validation
     if (password.length < 8) {
-      setError('Password must be at least 8 characters long.');
+      const errorMsg = 'Password must be at least 8 characters long.';
+      setError(errorMsg);
+      toast.error(errorMsg);
       setLoading(false);
       return;
     }
@@ -48,14 +54,18 @@ export default function Register() {
     // Validate password complexity
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]).{8,}$/;
     if (!passwordRegex.test(password)) {
-      setError('Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special symbol.');
+      const errorMsg = 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special symbol.';
+      setError(errorMsg);
+      toast.error(errorMsg);
       setLoading(false);
       return;
     }
 
     const phoneRegex = /^\d{10}$/;
     if (!phoneRegex.test(number)) {
-      setError('Please enter a valid 10-digit mobile number.');
+      const errorMsg = 'Please enter a valid 10-digit mobile number.';
+      setError(errorMsg);
+      toast.error(errorMsg);
       setLoading(false);
       return;
     }
@@ -81,10 +91,13 @@ export default function Register() {
       });
 
       setSuccess(response.data.message + '. Redirecting to login...');
+      toast.success('Registration successful! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
 
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      const errorMsg = err.response?.data?.message || 'Registration failed. Please try again.';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
