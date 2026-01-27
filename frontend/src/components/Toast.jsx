@@ -47,10 +47,10 @@ const Toast = ({ type = 'info', message, onClose, autoClose = true, duration = 5
 
     return (
         <div
-            className={`fixed top-4 right-4 z-50 transform transition-all duration-300 ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+            className={`transform transition-all duration-300 ease-out ${isVisible ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95'
                 }`}
         >
-            <div className={`${config.bgColor} text-white rounded-xl shadow-2xl p-4 pr-12 max-w-md border-2 ${config.borderColor}`}>
+            <div className={`${config.bgColor} text-white rounded-xl shadow-2xl p-4 pr-12 max-w-md min-w-[320px] border-2 ${config.borderColor}`}>
                 <div className="flex items-start gap-3">
                     <Icon className={`w-6 h-6 ${config.iconColor} flex-shrink-0 mt-0.5`} />
                     <p className="text-sm font-medium leading-relaxed">{message}</p>
@@ -63,6 +63,7 @@ const Toast = ({ type = 'info', message, onClose, autoClose = true, duration = 5
                         setTimeout(() => onClose?.(), 300);
                     }}
                     className="absolute top-3 right-3 p-1 hover:bg-white/20 rounded-lg transition-colors"
+                    aria-label="Close notification"
                 >
                     <XMarkIcon className="w-5 h-5" />
                 </button>
@@ -84,23 +85,26 @@ const Toast = ({ type = 'info', message, onClose, autoClose = true, duration = 5
 // Toast Container Component
 export const ToastContainer = ({ toasts, removeToast }) => {
     return (
-        <div className="fixed top-4 right-4 z-50 space-y-3">
-            {toasts.map((toast) => (
-                <Toast
-                    key={toast.id}
-                    type={toast.type}
-                    message={toast.message}
-                    onClose={() => removeToast(toast.id)}
-                    autoClose={toast.autoClose}
-                    duration={toast.duration}
-                />
-            ))}
+        <div className="fixed top-4 right-4 z-50 space-y-3 max-w-md pointer-events-none">
+            <div className="space-y-3 pointer-events-auto">
+                {toasts.map((toast) => (
+                    <Toast
+                        key={toast.id}
+                        type={toast.type}
+                        message={toast.message}
+                        onClose={() => removeToast(toast.id)}
+                        autoClose={toast.autoClose}
+                        duration={toast.duration}
+                    />
+                ))}
+            </div>
         </div>
     );
 };
 
-// Custom Hook for Toast Management
-export const useToast = () => {
+// Legacy hook - kept for backward compatibility
+// Use ToastContext instead for global toast management
+export const useToastLegacy = () => {
     const [toasts, setToasts] = React.useState([]);
 
     const addToast = (message, type = 'info', options = {}) => {
