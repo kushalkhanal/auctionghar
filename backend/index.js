@@ -4,9 +4,7 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 
-const connectDB = require('./config/db.js');
 const { corsOptions, allowedOrigins } = require('./config/corsConfig.js');
-const { createRedisClient, closeRedis } = require('./config/redisConfig.js');
 
 // Middleware
 const { protect, isAdmin } = require('./middlewares/authMiddleware.js');
@@ -103,66 +101,4 @@ app.use('/api/admin/dashboard', protect, adminDashboardRoutes);
 app.use('/api/admin/users', protect, adminUserRoutes);
 app.use('/api/admin/bidding-rooms', protect, adminBiddingRoomRoutes);
 
-// Start Server
-const PORT = process.env.PORT || 5050;
-
-// Initialize database and Redis, then start server
-const startServer = async () => {
-    try {
-        // Connect to MongoDB
-        await connectDB();
-
-        // Connect to Redis (non-blocking - app continues if Redis fails)
-        try {
-            await createRedisClient();
-        } catch (redisError) {
-            console.warn('⚠️  Redis connection failed, continuing without cache');
-            console.warn('   Error:', redisError.message);
-        }
-
-        // Start HTTP server
-        const server = app.listen(PORT, () => {
-            console.log(`\n🚀 Server running on port ${PORT}`);
-            console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`   URL: http://localhost:${PORT}\n`);
-        });
-
-        // Graceful shutdown handling
-        const gracefulShutdown = async (signal) => {
-            console.log(`\n${signal} received. Starting graceful shutdown...`);
-
-            // Close HTTP server
-            server.close(async () => {
-                console.log('✅ HTTP server closed');
-
-                // Close Redis connection
-                try {
-                    await closeRedis();
-                } catch (error) {
-                    console.error('❌ Error closing Redis:', error.message);
-                }
-
-                // Exit process
-                console.log('✅ Graceful shutdown complete');
-                process.exit(0);
-            });
-
-            // Force shutdown after 10 seconds
-            setTimeout(() => {
-                console.error('⚠️  Forced shutdown after timeout');
-                process.exit(1);
-            }, 10000);
-        };
-
-        // Listen for termination signals
-        process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-        process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-    } catch (error) {
-        console.error('❌ Failed to start server:', error);
-        process.exit(1);
-    }
-};
-
-// Start the server
-startServer();
+module.exports = app;
