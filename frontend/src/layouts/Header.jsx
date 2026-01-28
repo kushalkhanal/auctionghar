@@ -2,15 +2,18 @@ import React from 'react';
 import { NavLink } from "react-router-dom";
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../context/PermissionContext';
+import { useWatchlist } from '../context/WatchlistContext';
 import ProfileDropdown from '../components/ProfileDropdown'; // Ensure this path is correct
 import NotificationBell from '../components/NotificationBell';
 import CanAccess from '../components/CanAccess';
 import { ROLES } from '../constants/permissions';
 import logo from '../assets/logo auction ghar.png';
+import { HeartIcon } from '@heroicons/react/24/outline';
 
 const Header = () => {
     const { isAuthenticated, user, logout } = useAuth();
     const { isModerator } = usePermissions();
+    const { watchlistCount } = useWatchlist();
 
 
     const navLinkClass = ({ isActive }) =>
@@ -30,7 +33,22 @@ const Header = () => {
 
                     <NavLink to="/" className={navLinkClass}>Home</NavLink>
                     {isAuthenticated && (
-                        <NavLink to="/auctions" className={navLinkClass}>Auctions</NavLink>
+                        <>
+                            <NavLink to="/auctions" className={navLinkClass}>Auctions</NavLink>
+                            <NavLink to="/watchlist" className="relative">
+                                {({ isActive }) => (
+                                    <>
+                                        <HeartIcon className={`h-6 w-6 transition-colors ${isActive ? 'text-red-500 fill-current' : 'text-neutral-dark hover:text-red-500'
+                                            }`} />
+                                        {watchlistCount > 0 && (
+                                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                                                {watchlistCount > 9 ? '9+' : watchlistCount}
+                                            </span>
+                                        )}
+                                    </>
+                                )}
+                            </NavLink>
+                        </>
                     )}
 
 
