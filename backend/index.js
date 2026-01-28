@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const connectDB = require('./config/db.js');
+const { corsOptions, allowedOrigins } = require('./config/corsConfig.js');
 
 // Middleware
 const { protect, isAdmin } = require('./middlewares/authMiddleware.js');
@@ -31,11 +32,15 @@ const app = express();
 // Trust proxy - Required for rate limiting to work behind proxies (Nginx, Cloudflare, etc.)
 app.set('trust proxy', 1);
 
-// Core Middlewares
-app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true // Allow cookies to be sent
-}));
+// Enhanced CORS Configuration
+// Supports multiple origins, dynamic validation, preflight caching, and exposed headers
+app.use(cors(corsOptions));
+
+// Log allowed origins on startup
+console.log('🔒 CORS Configuration:');
+console.log('   Allowed Origins:', allowedOrigins.length > 0 ? allowedOrigins : ['No origin (requests without origin)']);
+console.log('   Credentials:', corsOptions.credentials);
+console.log('   Preflight Cache:', `${corsOptions.maxAge / 3600} hours`);
 
 // Security Headers with Helmet.js
 app.use(helmet({
