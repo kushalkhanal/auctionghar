@@ -178,7 +178,12 @@ exports.placeBid = async (req, res) => {
 
         // Validate bid amount
         if (bidAmount <= room.currentPrice) {
-            return res.status(400).json({ message: `Bid must be higher than current price: $${room.currentPrice}` });
+            return res.status(400).json({ message: "Bid amount is not enough" });
+        }
+
+        // Check if user has enough balance in wallet
+        if (bidder.wallet < bidAmount) {
+            return res.status(400).json({ message: "You do not have enough amount to place a bid" });
         }
 
         // --- Step 2: Update and Save Bid ---
@@ -233,7 +238,7 @@ exports.placeBid = async (req, res) => {
 
     } catch (error) {
         console.error("PLACE BID ERROR:", error);
-        res.status(500).json({ message: "Server Error" });
+        res.status(500).json({ message: error.message || "Server Error while placing bid" });
     }
 };
 

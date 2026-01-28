@@ -1,16 +1,28 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useEsewaPayment } from '../hooks/useEsewaPayment';
-import { ShieldCheckIcon, LockClosedIcon, CreditCardIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { useKhaltiPayment } from '../hooks/useKhaltiPayment';
+import { ShieldCheckIcon, LockClosedIcon, CreditCardIcon, InformationCircleIcon, BanknotesIcon } from '@heroicons/react/24/outline';
 
 const WalletPage = () => {
     const { user } = useAuth();
     const [amount, setAmount] = useState(100);
-    const { initiatePayment, loading, error } = useEsewaPayment();
+    const [paymentMethod, setPaymentMethod] = useState('esewa');
+
+    // Hooks
+    const { initiatePayment: initiateEsewa, loading: esewaLoading, error: esewaError } = useEsewaPayment();
+    const { initiateKhalti, khaltiLoading, khaltiError } = useKhaltiPayment();
+
+    const loading = esewaLoading || khaltiLoading;
+    const error = esewaError || khaltiError;
 
     const handleAddFunds = (e) => {
         e.preventDefault();
-        initiatePayment(amount);
+        if (paymentMethod === 'esewa') {
+            initiateEsewa(amount);
+        } else {
+            initiateKhalti(amount);
+        }
     };
 
     const quickAmounts = [100, 500, 1000, 5000];
@@ -65,7 +77,35 @@ const WalletPage = () => {
                                     </div>
                                     <div>
                                         <h2 className="text-2xl font-bold text-neutral-darkest">Add Funds</h2>
-                                        <p className="text-sm text-neutral-dark">Powered by eSewa</p>
+                                        <p className="text-sm text-neutral-dark">Select provider and amount</p>
+                                    </div>
+                                </div>
+
+                                {/* Payment Method Selection */}
+                                <div className="mb-8">
+                                    <label className="block text-sm font-medium text-gray-700 mb-3">Select Payment Method</label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div
+                                            onClick={() => setPaymentMethod('esewa')}
+                                            className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col items-center justify-center transition-all ${paymentMethod === 'esewa'
+                                                    ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
+                                                    : 'border-gray-200 hover:border-green-300 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold mb-2">e</div>
+                                            <span className="font-bold text-gray-800">eSewa</span>
+                                        </div>
+
+                                        <div
+                                            onClick={() => setPaymentMethod('khalti')}
+                                            className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col items-center justify-center transition-all ${paymentMethod === 'khalti'
+                                                    ? 'border-purple-600 bg-purple-50 ring-2 ring-purple-200'
+                                                    : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold mb-2">K</div>
+                                            <span className="font-bold text-gray-800">Khalti</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -79,8 +119,8 @@ const WalletPage = () => {
                                                 type="button"
                                                 onClick={() => setAmount(quickAmount)}
                                                 className={`py-3 px-4 rounded-lg font-semibold transition-all ${amount === quickAmount
-                                                        ? 'bg-primary text-white shadow-md scale-105'
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    ? 'bg-primary text-white shadow-md scale-105'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                     }`}
                                             >
                                                 NPR {quickAmount}
@@ -120,7 +160,11 @@ const WalletPage = () => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-4 rounded-xl hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
+                                    className={`w-full text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none disabled:bg-gray-400
+                                        ${paymentMethod === 'esewa'
+                                            ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800'
+                                            : 'bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900'
+                                        }`}
                                 >
                                     {loading ? (
                                         <span className="flex items-center justify-center gap-2">
@@ -128,10 +172,10 @@ const WalletPage = () => {
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                             </svg>
-                                            Processing...
+                                            Processing with {paymentMethod === 'esewa' ? 'eSewa' : 'Khalti'}...
                                         </span>
                                     ) : (
-                                        `Add NPR ${amount.toLocaleString()} to Wallet`
+                                        `Load NPR ${amount.toLocaleString()} via ${paymentMethod === 'esewa' ? 'eSewa' : 'Khalti'}`
                                     )}
                                 </button>
                             </form>

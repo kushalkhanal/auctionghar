@@ -25,6 +25,11 @@ const paymentSchema = new mongoose.Schema({
     unique: true,
     index: true, // Index for faster lookups
   },
+  pidx: {
+    type: String,
+    unique: true,
+    sparse: true, // Sparse index allows null/undefined values for eSewa payments
+  },
   status: {
     type: String,
     enum: ['pending', 'success', 'failed'],

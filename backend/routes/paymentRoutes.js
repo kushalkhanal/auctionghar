@@ -4,7 +4,9 @@ const router = express.Router();
 
 const {
     initiateEsewaPayment,
+    initiateKhaltiPayment,
     verifyEsewaPayment,
+    verifyKhaltiPayment,
     getTransactionHistory,
     confirmFrontendPayment,
     getFailedPayments,
@@ -56,6 +58,10 @@ router.post("/confirm-from-frontend", protect, confirmFrontendPayment);
 
 // Webhook route (called by eSewa)
 router.get("/verify", webhookRateLimiter, logWebhookReceipt, validateWebhook, verifyEsewaPayment);
+
+// Khalti Routes
+router.post("/initiate-khalti", protect, paymentInitiationRateLimiter, initiateKhaltiPayment);
+router.get("/verify-khalti", webhookRateLimiter, verifyKhaltiPayment);
 
 // Admin routes (require admin permissions)
 router.get("/failed", protect, getFailedPayments);

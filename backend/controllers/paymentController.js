@@ -18,8 +18,10 @@ let transaction_uuid_from_data = 'N/A'; // For logging
 const {
     ESEWA_MERCHANT_CODE,
     ESEWA_MERCHANT_SECRET,
-    ESEWA_API_URL,
     ESEWA_VERIFY_URL,
+    KHALTI_SECRET_KEY,
+    KHALTI_INITIATE_URL = "https://dev.khalti.com/api/v2/epayment/initiate/",
+    KHALTI_LOOKUP_URL = "https://dev.khalti.com/api/v2/epayment/lookup/",
     FRONTEND_URL
 } = process.env;
 
@@ -168,6 +170,132 @@ exports.initiateEsewaPayment = async (req, res) => {
         });
 
         return res.status(500).json({ success: false, message: 'Server Error during payment initiation.' });
+    }
+};
+
+/**
+ * @desc    Initiate a payment with Khalti
+ * @route   POST /api/payment/initiate-khalti
+ * @access  Private
+ */
+exports.initiateKhaltiPayment = async (req, res) => {
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const userId = req.user._id;
+
+    try {
+        const { amount } = req.body;
+
+        if (!amount || amount < 10) {
+            return res.status(400).json({ success: false, message: 'Amount must be at least NPR 10.' });
+        }
+
+        // Transaction Validation (reuse existing)
+        const validation = await validateTransaction({
+            userId,
+            amount,
+            ipAddress,
+            userAgent
+        });
+
+        if (!validation.allowed) {
+            return res.status(400).json({
+                success: false,
+                message: validation.errors[0] || 'Transaction validation failed'
+            });
+        }
+
+        const transaction_uuid = uuidv4();
+
+        // Encrypt sensitive payment details
+        const paymentDetails = {
+            amount,
+            userId: userId.toString(),
+            initiatedAt: new Date().toISOString(),
+            ipAddress,
+            userAgent
+        };
+        const encryptedDetails = encrypt(paymentDetails);
+
+        // Create pending payment record
+        const newPayment = new Payment({
+            userId,
+            amount,
+            transaction_uuid,
+            status: 'pending',
+            paymentType: 'wallet_load_khalti', // Distinguish Khalti
+            ipAddress,
+            userAgent,
+            encryptedDetails,
+            fraudScore: validation.fraudScore,
+            riskLevel: validation.riskLevel,
+            securityFlags: validation.flags || []
+        });
+        await newPayment.save();
+
+        // Log initiation
+        await logPaymentEvent({
+            transactionId: transaction_uuid,
+            eventType: 'payment_initiated',
+            userId,
+            ipAddress,
+            userAgent,
+            status: 'success',
+            eventData: { amount, method: 'khalti' }
+        });
+
+        // Prepare Khalti Payload
+        const khaltiPayload = {
+            return_url: `${FRONTEND_URL}/payment/success`, // Redirect to generic success, will handle pidx there
+            website_url: FRONTEND_URL,
+            amount: amount * 100, // Convert to Paisa
+            purchase_order_id: transaction_uuid,
+            purchase_order_name: "Wallet Load",
+            customer_info: {
+                name: req.user.name || "Valued User",
+                email: req.user.email || "user@example.com",
+                phone: req.user.phoneNumber || "9800000000"
+            }
+        };
+
+        const response = await axios.post(
+            KHALTI_INITIATE_URL,
+            khaltiPayload,
+            {
+                headers: {
+                    Authorization: `Key ${KHALTI_SECRET_KEY}`,
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+
+        // Update payment with PIDX immediately
+        if (response.data.pidx) {
+            newPayment.pidx = response.data.pidx;
+            await newPayment.save();
+        }
+
+        console.log(`[KHALTI] Initiated transaction ${transaction_uuid} - PIDX: ${response.data.pidx}`);
+
+        res.status(200).json({
+            success: true,
+            payment_url: response.data.payment_url,
+            pidx: response.data.pidx
+        });
+
+    } catch (error) {
+        console.error("Khalti initiation error:", error?.response?.data || error.message);
+        await logPaymentEvent({
+            transactionId: 'N/A',
+            eventType: 'payment_initiated',
+            userId,
+            ipAddress,
+            userAgent,
+            status: 'failure',
+            errorMessage: error?.response?.data?.detail || error.message,
+            errorCode: 'KHALTI_ERROR'
+        });
+        return res.status(500).json({ success: false, message: 'Server Error during Khalti initiation.' });
     }
 };
 
@@ -351,6 +479,112 @@ exports.verifyEsewaPayment = async (req, res) => {
         });
 
         res.redirect(failureRedirectUrl + '?error=server_error');
+    }
+};
+
+/**
+ * @desc    Verify Khalti Payment
+ * @route   GET /api/payment/verify-khalti
+ * @access  Public (Called by Frontend)
+ */
+exports.verifyKhaltiPayment = async (req, res) => {
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    try {
+        const { pidx } = req.query;
+
+        if (!pidx) {
+            return res.status(400).json({ success: false, message: "Missing pidx" });
+        }
+
+        console.log(`[KHALTI VERIFY] Verifying pidx: ${pidx}`);
+
+        // Call Khalti Lookup
+        const response = await axios.post(
+            KHALTI_LOOKUP_URL,
+            { pidx },
+            {
+                headers: {
+                    Authorization: `Key ${KHALTI_SECRET_KEY}`,
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+
+        const data = response.data; // status, transaction_id, total_amount, purchase_order_id
+        console.log("[KHALTI VERIFY] Full Response Data:", JSON.stringify(data, null, 2));
+
+        await logPaymentEvent({
+            transactionId: data.purchase_order_id || 'unknown',
+            eventType: 'verification_attempt',
+            userId: null,
+            ipAddress,
+            userAgent,
+            status: 'info',
+            eventData: { khaltiStatus: data.status, pidx, fullResponse: data }
+        });
+
+        if (data.status === 'Completed') {
+            let transaction_uuid = data.purchase_order_id;
+
+            // Fallback: If purchase_order_id is missing, look up by PIDX
+            if (!transaction_uuid) {
+                console.log(`[KHALTI VERIFY] Purchase Order ID missing in response. Looking up by PIDX: ${pidx}`);
+                const linkedPayment = await Payment.findOne({ pidx: pidx });
+
+                if (linkedPayment) {
+                    transaction_uuid = linkedPayment.transaction_uuid;
+                    console.log(`[KHALTI VERIFY] Found linked transaction: ${transaction_uuid} for PIDX: ${pidx}`);
+                } else {
+                    console.error(`[KHALTI VERIFY] CRITICAL: Could not find payment record for PIDX: ${pidx}`);
+                    return res.status(400).json({ success: false, message: "Payment record not found for linked PIDX" });
+                }
+            }
+
+            // Validate payment exists
+            const paymentRecord = await Payment.findOne({ transaction_uuid });
+
+            if (!paymentRecord) {
+                console.error(`[KHALTI VERIFY] Payment record not found for UUID: ${transaction_uuid}`);
+                return res.status(404).json({ success: false, message: "Payment record not found." });
+            }
+
+            // Process Success
+            await processSuccessfulPayment(transaction_uuid, ipAddress, userAgent);
+
+            return res.status(200).json({
+                success: true,
+                message: "Payment verified successfully",
+                data: data
+            });
+        } else {
+            await logPaymentEvent({
+                transactionId: data.purchase_order_id || 'unknown',
+                eventType: 'payment_failed',
+                userId: null,
+                ipAddress,
+                userAgent,
+                status: 'failure',
+                errorMessage: `Khalti status: ${data.status}`
+            });
+            return res.status(400).json({ success: false, message: "Payment not completed", status: data.status });
+        }
+
+    } catch (error) {
+        console.error("Khalti verification error:", error?.response?.data || error.message);
+        // Log Error
+        await logPaymentEvent({
+            transactionId: 'unknown',
+            eventType: 'verification_attempt',
+            userId: null,
+            ipAddress,
+            userAgent,
+            status: 'failure',
+            errorMessage: error?.response?.data?.detail || error.message,
+            errorCode: 'KHALTI_VERIFY_ERROR'
+        });
+        return res.status(500).json({ success: false, message: 'Server Error during verification.' });
     }
 };
 

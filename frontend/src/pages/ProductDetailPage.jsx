@@ -109,7 +109,7 @@ const ProductDetailPage = () => {
 
         const bidAmountNum = parseFloat(bidAmount);
         if (isNaN(bidAmountNum) || bidAmountNum <= room.currentPrice) {
-            const errorMsg = `Bid must be higher than current price: Npr ${room.currentPrice}`;
+            const errorMsg = "Bid amount is not enough";
             setBidError(errorMsg);
             toast.error(errorMsg);
             return;
@@ -124,13 +124,16 @@ const ProductDetailPage = () => {
         }
 
         try {
-            const { data } = await api.post(`/bidding-rooms/${id}/bids`, { amount: bidAmount });
+            const { data } = await api.post(`/bidding-rooms/${id}/bid`, { amount: bidAmount });
             setBidSuccess(data.message);
             toast.success('Bid placed successfully!');
             setRoom(data.room);
             setBidAmount(Math.ceil(data.room.currentPrice + 1));
         } catch (err) {
-            const errorMsg = err.response?.data?.message || 'An error occurred while placing your bid.';
+            console.error("Bid Placement Error:", err);
+            const errorMsg = err.response?.data?.message
+                || err.message
+                || 'An error occurred while placing your bid.';
             setBidError(errorMsg);
             toast.error(errorMsg);
         }

@@ -18,28 +18,38 @@ const PaymentSuccessPage = () => {
         const processPaymentConfirmation = async () => {
             console.log("A. [SUCCESS_PAGE] Component mounted. Starting payment confirmation process.");
             const queryParams = new URLSearchParams(location.search);
-            const dataParam = queryParams.get('data');
+            const pidxParam = queryParams.get('pidx'); // Khalti Parameter
+            const dataParam = queryParams.get('data'); // eSewa Parameter
 
-            if (!dataParam) {
+            if (!dataParam && !pidxParam) {
                 console.error("B. [SUCCESS_PAGE] ERROR: No transaction data found in URL.");
                 setTimeout(() => navigate('/'), 3000);
                 return;
             }
 
             try {
-                const decodedData = JSON.parse(atob(dataParam));
-                const { transaction_uuid } = decodedData;
+                if (pidxParam) {
+                    console.log(`C. [SUCCESS_PAGE] Verifying Khalti Payment: ${pidxParam}`);
+                    await api.get(`/payment/verify-khalti?pidx=${pidxParam}`);
+                    console.log("D. [SUCCESS_PAGE] Khalti verification successful.");
+                } else if (dataParam) {
+                    const decodedData = JSON.parse(atob(dataParam));
+                    const { transaction_uuid } = decodedData;
 
-                console.log(`C. [SUCCESS_PAGE] Notifying backend to confirm transaction: ${transaction_uuid}`);
-                await api.post('/payment/confirm-from-frontend', { transaction_uuid });
-                console.log("D. [SUCCESS_PAGE] Backend confirmation successful. Now calling refetchUser...");
+                    console.log(`C. [SUCCESS_PAGE] Notifying backend to confirm eSewa transaction: ${transaction_uuid}`);
+                    await api.post('/payment/confirm-from-frontend', { transaction_uuid });
+                    console.log("D. [SUCCESS_PAGE] Backend confirmation successful.");
+                }
 
+                console.log("D2. [SUCCESS_PAGE] Now calling refetchUser...");
                 await refetchUser();
-
                 console.log("E. [SUCCESS_PAGE] refetchUser call finished.");
 
             } catch (error) {
                 console.error("F. [SUCCESS_PAGE] An error occurred during the confirmation process:", error);
+
+                // If it fails, we might want to show error to user?
+                // For now, allow redirect to home where they might see error or just unchanged balance.
             } finally {
                 console.log("G. [SUCCESS_PAGE] Process finished. Redirecting to home page in 5 seconds.");
                 setTimeout(() => {
@@ -92,7 +102,7 @@ const PaymentSuccessPage = () => {
 
                             <div className="flex items-center justify-center gap-3 text-blue-600">
                                 <CreditCardIcon className="w-6 h-6" />
-                                <span className="font-semibold">eSewa Payment Gateway</span>
+                                <span className="font-semibold">Payment Gateway Processed</span>
                             </div>
                         </div>
 

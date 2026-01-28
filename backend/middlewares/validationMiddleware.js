@@ -176,7 +176,7 @@ const validateBid = [
     param('id')
         .isMongoId().withMessage('Invalid auction ID'),
 
-    body('bidAmount')
+    body('amount')
         .notEmpty().withMessage('Bid amount is required')
         .isFloat({ min: 0, max: 10000000 }).withMessage('Bid amount must be between 0 and 10,000,000')
         .toFloat()
@@ -272,7 +272,7 @@ const checkValidation = (req, res, next) => {
         console.log("REQ BODY:", req.body);
         return res.status(400).json({
             success: false,
-            message: 'Validation failed',
+            message: errors.array()[0].msg, // Return the first error message directly
             errors: errors.array().map(err => ({
                 field: err.path || err.param,
                 message: err.msg,
