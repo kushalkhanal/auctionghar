@@ -27,19 +27,21 @@ const {
     validateMongoId,
     checkValidation
 } = require('../middlewares/validationMiddleware.js');
+const { cacheMiddleware } = require('../middlewares/cacheMiddleware.js');
+const { CACHE_TTL } = require('../config/cacheConfig.js');
 
 // --- PUBLIC ROUTES (anyone can access) ---
-// GET /api/bidding-rooms/ - with search and filter validation
-router.get('/', validateSearch, checkValidation, getAllPublicBiddingRooms);
+// GET /api/bidding-rooms/ - with search, filter validation, and 30s cache
+router.get('/', cacheMiddleware(CACHE_TTL.AUCTION_LISTINGS), validateSearch, checkValidation, getAllPublicBiddingRooms);
 
-// GET /api/bidding-rooms/categories/stats
-router.get('/categories/stats', getCategoryStats);
+// GET /api/bidding-rooms/categories/stats - with 5min cache
+router.get('/categories/stats', cacheMiddleware(CACHE_TTL.CATEGORY_STATS), getCategoryStats);
 
-// GET /api/bidding-rooms/tags/popular
-router.get('/tags/popular', getPopularTags);
+// GET /api/bidding-rooms/tags/popular - with 10min cache
+router.get('/tags/popular', cacheMiddleware(CACHE_TTL.POPULAR_TAGS), getPopularTags);
 
-// GET /api/bidding-rooms/:id - with ID validation
-router.get('/:id', validateMongoId, checkValidation, getBiddingRoomById);
+// GET /api/bidding-rooms/:id - with ID validation and 1min cache
+router.get('/:id', cacheMiddleware(CACHE_TTL.AUCTION_DETAIL), validateMongoId, checkValidation, getBiddingRoomById);
 
 
 

@@ -3,6 +3,8 @@ const { createAndEmitNewBidNotification } = require('../services/notificationSer
 const Notification = require('../models/notificationModel.js');
 const { logActivity } = require('../utils/activityLogger');
 const { sanitizeObject, sanitizeSearchQuery } = require('../utils/sanitizer');
+const { invalidateCache } = require('../middlewares/cacheMiddleware.js');
+const { CACHE_PREFIX } = require('../config/cacheConfig.js');
 
 // --- PUBLIC: GET ALL BIDDING ROOMS (with Search and Pagination) ---
 exports.getAllPublicBiddingRooms = async (req, res) => {
@@ -133,6 +135,12 @@ exports.createBiddingRoom = async (req, res) => {
             resourceType: 'auction'
         });
 
+        // Invalidate related caches (new auction affects listings, categories, tags)
+        await invalidateCache(`${CACHE_PREFIX.AUCTION_LIST}*`);
+        await invalidateCache(`${CACHE_PREFIX.CATEGORY}*`);
+        await invalidateCache(`${CACHE_PREFIX.TAG}*`);
+        await invalidateCache(`cache:/api/bidding-rooms*`);
+
         res.status(201).json({
             success: true,
             message: "Bidding room created successfully!",
@@ -217,6 +225,11 @@ exports.placeBid = async (req, res) => {
             resourceId: room._id.toString(),
             resourceType: 'auction'
         });
+
+        // Invalidate auction-specific cache (bid affects this auction's data)
+        await invalidateCache(`${CACHE_PREFIX.AUCTION}${room._id.toString()}*`);
+        await invalidateCache(`cache:/api/bidding-rooms/${room._id.toString()}*`);
+        await invalidateCache(`cache:/api/bidding-rooms?*`); // Invalidate listings too
 
     } catch (error) {
         console.error("PLACE BID ERROR:", error);
