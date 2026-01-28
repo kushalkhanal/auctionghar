@@ -66,6 +66,18 @@ const UserSchema = new mongoose.Schema(
             index: true
         },
 
+        // KYC (Know Your Customer) fields
+        kycStatus: {
+            type: String,
+            enum: ['unverified', 'pending', 'verified', 'rejected'],
+            default: 'unverified'
+        },
+        kycDocument: {
+            type: String // URL or path to the uploaded document
+        },
+        kycRejectionReason: {
+            type: String // Reason for KYC rejection
+        },
 
         number: {
             type: String,

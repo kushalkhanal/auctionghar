@@ -2,10 +2,12 @@
 import React, { Fragment, useState, useEffect } from 'react';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { Tab } from '@headlessui/react';
-import { UserIcon, DocumentTextIcon, Cog6ToothIcon, TrophyIcon, ShoppingBagIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { UserIcon, DocumentTextIcon, Cog6ToothIcon, TrophyIcon, ShoppingBagIcon, ChartBarIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import MyBidsTab from '../components/profile/MyBidsTab';
 import SellingItemsTab from '../components/profile/SellingItemsTab';
 import SettingsTab from '../components/profile/SettingsTab';
+import VerificationTab from '../components/profile/VerificationTab';
+import VerificationBadge from '../components/VerificationBadge';
 import StatCard from '../components/StatCard';
 import api from '../api/axiosConfig';
 
@@ -46,6 +48,7 @@ const ProfilePage = () => {
   const tabs = [
     { name: 'My Bids', icon: DocumentTextIcon, content: <MyBidsTab bidHistory={bidHistory} /> },
     { name: 'Items I\'m Selling', icon: UserIcon, content: <SellingItemsTab items={listedItems} /> },
+    { name: 'Verification', icon: ShieldCheckIcon, content: <VerificationTab user={profile} onUpdate={refresh} /> },
     { name: 'Settings', icon: Cog6ToothIcon, content: <SettingsTab user={profile} onProfileUpdate={refresh} /> },
   ];
 
@@ -66,7 +69,10 @@ const ProfilePage = () => {
             </div>
           )}
           <div>
-            <h1 className="text-3xl font-bold text-neutral-darkest">{profile.firstName} {profile.lastName}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold text-neutral-darkest">{profile.firstName} {profile.lastName}</h1>
+              {profile.kycStatus === 'verified' && <VerificationBadge size="lg" />}
+            </div>
             <p className="text-neutral-dark">{profile.email}</p>
             {profile.location && <p className="text-sm text-neutral-dark mt-1">From: {profile.location}</p>}
           </div>

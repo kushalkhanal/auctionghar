@@ -8,10 +8,22 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configure storage for profile images
+// Configure storage with dynamic destination
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, uploadDir);
+        let uploadPath = uploadDir; // Default to profile images
+
+        if (file.fieldname === 'kycDocument') {
+            uploadPath = 'uploads/kyc-documents';
+        } else if (file.fieldname === 'productImages') {
+            uploadPath = 'uploads/product-images';
+        }
+
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+
+        cb(null, uploadPath);
     },
     filename: function (req, file, cb) {
         // Sanitize filename: remove special characters, limit length
@@ -64,92 +76,98 @@ const upload = multer({
     }
 });
 
-// Profile image upload middleware with magic number validation
+// Profile image upload middleware
 const profileImageUpload = upload.single('profileImage');
 
+// KYC document upload middleware
+const kycDocumentUpload = upload.single('kycDocument');
+
 // Wrapper to handle multer errors gracefully
-const profileImageUploadWithValidation = async (req, res, next) => {
-    profileImageUpload(req, res, async function (err) {
-        if (err instanceof multer.MulterError) {
-            // Multer-specific errors
-            if (err.code === 'LIMIT_FILE_SIZE') {
-                return res.status(400).json({
-                    success: false,
-                    message: 'File too large. Maximum size is 2MB.'
-                });
-            }
-            if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Too many files. Only one file allowed.'
-                });
-            }
-            return res.status(400).json({
-                success: false,
-                message: err.message
-            });
-        } else if (err) {
-            // Custom  errors from fileFilter
-            return res.status(400).json({
-                success: false,
-                message: err.message
-            });
-        }
-
-        // File uploaded successfully, now validate magic numbers
-        if (req.file) {
-            try {
-                // Dynamic import for ESM module
-                const { fileTypeFromFile } = await import('file-type');
-                const fileType = await fileTypeFromFile(req.file.path);
-
-                // Verify actual file type matches claimed MIME type
-                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-
-                if (!fileType || !allowedTypes.includes(fileType.mime)) {
-                    // Delete the uploaded file (it's a fake/spoofed image)
-                    fs.unlinkSync(req.file.path);
-
+const handleUploadWithValidation = (uploadFn) => {
+    return async (req, res, next) => {
+        uploadFn(req, res, async function (err) {
+            if (err instanceof multer.MulterError) {
+                // Multer-specific errors
+                if (err.code === 'LIMIT_FILE_SIZE') {
                     return res.status(400).json({
                         success: false,
-                        message: 'Invalid file content. The file is not a valid image (failed magic number check).'
+                        message: 'File too large. Maximum size is 2MB.'
                     });
                 }
-
-                // File is valid, continue
-                next();
-            } catch (validationError) {
-                console.error('File validation error:', validationError);
-
-                // Delete the file if validation fails
-                if (req.file && req.file.path && fs.existsSync(req.file.path)) {
-                    fs.unlinkSync(req.file.path);
+                if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Too many files. Only one file allowed.'
+                    });
                 }
-
-                return res.status(500).json({
+                return res.status(400).json({
                     success: false,
-                    message: 'File validation failed. Please try again.'
+                    message: err.message
+                });
+            } else if (err) {
+                // Custom errors from fileFilter
+                return res.status(400).json({
+                    success: false,
+                    message: err.message
                 });
             }
-        } else {
-            // No file uploaded (optional upload), continue
-            next();
-        }
-    });
+
+            // File uploaded successfully, now validate magic numbers
+            if (req.file) {
+                try {
+                    // Dynamic import for ESM module
+                    const { fileTypeFromFile } = await import('file-type');
+                    const fileType = await fileTypeFromFile(req.file.path);
+
+                    // Verify actual file type matches claimed MIME type
+                    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+
+                    if (!fileType || !allowedTypes.includes(fileType.mime)) {
+                        // Delete the uploaded file (it's a fake/spoofed image)
+                        fs.unlinkSync(req.file.path);
+
+                        return res.status(400).json({
+                            success: false,
+                            message: 'Invalid file content. The file is not a valid image (failed magic number check).'
+                        });
+                    }
+
+                    // File is valid, continue
+                    next();
+                } catch (validationError) {
+                    console.error('File validation error:', validationError);
+
+                    // Delete the file if validation fails
+                    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+                        fs.unlinkSync(req.file.path);
+                    }
+
+                    return res.status(500).json({
+                        success: false,
+                        message: 'File validation failed. Please try again.'
+                    });
+                }
+            } else {
+                // No file uploaded (optional upload), continue
+                next();
+            }
+        });
+    };
 };
 
-// Product images upload (for bidding rooms) - keeping original implementation for now
-const productImagesUpload = (req, res, next) => {
-    const upload = multer({
-        storage: storage,
-        fileFilter: fileFilter,
-        limits: {
-            fileSize: 5 * 1024 * 1024, // 5MB for product images
-            files: 5 // Up to 5 images
-        }
-    }).array('productImages', 5);
+// Config for product images (multiple files)
+const productImagesConfig = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB for product images
+        files: 5 // Up to 5 images
+    }
+}).array('productImages', 5);
 
-    upload(req, res, (err) => {
+// Product images wrapper
+const productImagesUpload = (req, res, next) => {
+    productImagesConfig(req, res, (err) => {
         if (err instanceof multer.MulterError) {
             if (err.code === 'LIMIT_FILE_SIZE') {
                 return res.status(400).json({
@@ -178,6 +196,7 @@ const productImagesUpload = (req, res, next) => {
 };
 
 module.exports = {
-    profileImageUpload: profileImageUploadWithValidation,
+    profileImageUpload: handleUploadWithValidation(profileImageUpload),
+    kycDocumentUpload: handleUploadWithValidation(kycDocumentUpload),
     productImagesUpload
 };

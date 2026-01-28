@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { ChartPieIcon, UsersIcon, CubeIcon, TagIcon, ShieldExclamationIcon } from '@heroicons/react/24/outline';
+import { ChartPieIcon, UsersIcon, CubeIcon, TagIcon, ShieldExclamationIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import logo from '../assets/logo auction ghar.png';
 
 const AdminLayout = () => {
@@ -36,6 +36,10 @@ const AdminLayout = () => {
           <NavLink to="/admin/failed-payments" className={navLinkClass}>
             <ShieldExclamationIcon className="h-6 w-6" />
             <span>Failed Payments</span>
+          </NavLink>
+          <NavLink to="/admin/kyc" className={navLinkClass}>
+            <ShieldCheckIcon className="h-6 w-6" />
+            <span>KYC Requests</span>
           </NavLink>
           {/* Placeholder for future sprint. We make it look disabled. */}
           <NavLink to="/admin/categories" className={navLinkClass + " opacity-50 cursor-not-allowed"}>

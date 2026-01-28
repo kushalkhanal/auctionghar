@@ -23,6 +23,7 @@ import AdminRoute from "./AdminRoutes";
 import AdminLayout from "../layouts/AdminLayout";
 import BiddingRoomManagement from "../pages/admin/BiddingRoomManagement";
 import ManageUsers from "../pages/admin/UserManagement";
+import KYCManagement from "../pages/admin/KYCManagement";
 import ProductDetailPage from '../pages/ProductDetailPage';
 import WalletPage from '../pages/WalletPage';
 import PaymentSuccessPage from '../pages/PaymentSuccessPage';
@@ -93,6 +94,7 @@ const AppRouter = () => (
             <Route element={<AdminLayout />}>
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
                 <Route path="/admin/users" element={<ManageUsers />} />
+                <Route path="/admin/kyc" element={<KYCManagement />} />
                 <Route path="/admin/bidding-rooms" element={<BiddingRoomManagement />} />
                 <Route path="/admin/bidding-rooms/add" element={<AddBiddingRoomPage />} />
                 <Route path="/admin/failed-payments" element={<FailedPaymentsPage />} />

@@ -18,6 +18,7 @@ const adminUserRoutes = require('./routes/admin/userManagementRoutes.js');
 const adminBiddingRoomRoutes = require('./routes/admin/biddingRoomManagementRoutes.js');
 const paymentRoutes = require('./routes/paymentRoutes.js');
 const profileRoutes = require('./routes/profileRoutes.js');
+const kycRoutes = require('./routes/kycRoutes.js');
 const notificationRoutes = require('./routes/notificationRoutes.js');
 const mfaRoutes = require('./routes/mfaRoutes.js');
 const rbacRoutes = require('./routes/rbacRoutes.js');
@@ -100,5 +101,8 @@ app.use('/api/health', healthRoutes);
 app.use('/api/admin/dashboard', protect, adminDashboardRoutes);
 app.use('/api/admin/users', protect, adminUserRoutes);
 app.use('/api/admin/bidding-rooms', protect, adminBiddingRoomRoutes);
+
+// KYC Routes
+app.use('/api/kyc', kycRoutes);
 
 module.exports = app;
