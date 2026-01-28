@@ -4,8 +4,8 @@
  */
 
 module.exports = {
-    // Number of days until password expires
-    PASSWORD_EXPIRY_DAYS: 90,
+    // Number of days until password expires (1 year)
+    PASSWORD_EXPIRY_DAYS: 365,
 
     // Number of previous passwords to store and prevent reuse
     PASSWORD_HISTORY_LIMIT: 5,

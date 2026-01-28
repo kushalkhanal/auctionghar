@@ -54,11 +54,17 @@ const ProfilePage = () => {
       <div className="container mx-auto p-4 sm:p-6 md:p-8">
         {/* --- Profile Header --- */}
         <div className="bg-white rounded-lg shadow-md p-6 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-          <img
-            src={`http://localhost:5050${profile.profileImage}`}
-            alt={profile.firstName}
-            className="h-24 w-24 md:h-32 md:w-32 rounded-full border-4 border-primary object-cover bg-gray-200"
-          />
+          {profile.profileImage ? (
+            <img
+              src={`http://localhost:5050${profile.profileImage}`}
+              alt={profile.firstName}
+              className="h-24 w-24 md:h-32 md:w-32 rounded-full border-4 border-primary object-cover bg-gray-200"
+            />
+          ) : (
+            <div className="h-24 w-24 md:h-32 md:w-32 rounded-full bg-blue-600 text-white flex items-center justify-center text-4xl font-bold border-4 border-white shadow-lg uppercase">
+              {profile.firstName ? profile.firstName.charAt(0) : 'U'}
+            </div>
+          )}
           <div>
             <h1 className="text-3xl font-bold text-neutral-darkest">{profile.firstName} {profile.lastName}</h1>
             <p className="text-neutral-dark">{profile.email}</p>

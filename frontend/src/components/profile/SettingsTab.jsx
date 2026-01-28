@@ -116,43 +116,55 @@ const SettingsTab = ({ user, onProfileUpdate }) => {
         <div>
             <h2 className="text-2xl font-semibold mb-4 text-neutral-darkest">Profile Settings</h2>
 
-            {/* Current Profile Image Display */}
-            <div className="mb-6">
-                <p className="text-sm font-medium text-gray-700 mb-2">Current Profile Picture</p>
-                <img
-                    src={`http://localhost:5050${user.profileImage}`}
-                    alt="Current profile"
-                    className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
-                />
-            </div>
-
             <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
+                {/* Profile Picture Section */}
+                <div className="mb-8 flex flex-col items-center sm:items-start">
+                    <div className="relative group cursor-pointer" onClick={() => document.getElementById('profile-upload').click()}>
+                        {/* Profile Image or Fallback */}
+                        {imagePreview ? (
+                            <img
+                                src={imagePreview}
+                                alt="Profile preview"
+                                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                            />
+                        ) : user.profileImage ? (
+                            <img
+                                src={`http://localhost:5050${user.profileImage}`}
+                                alt="Profile"
+                                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                            />
+                        ) : (
+                            <div className="w-32 h-32 rounded-full bg-blue-600 text-white flex items-center justify-center text-4xl font-bold border-4 border-white shadow-lg uppercase">
+                                {user.firstName ? user.firstName.charAt(0) : 'U'}
+                            </div>
+                        )}
+
+                        {/* Camera Icon Overlay */}
+                        <div className="absolute top-0 right-0 bg-white p-2 rounded-full shadow-md text-gray-600 hover:text-primary transition-colors border border-gray-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+
+                        {/* Hidden File Input */}
+                        <input
+                            id="profile-upload"
+                            type="file"
+                            name="profileImage"
+                            onChange={handleFileChange}
+                            accept="image/jpeg,image/jpg,image/png,image/gif"
+                            className="hidden"
+                        />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Click icon to update picture</p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input name="firstName" value={formData.firstName} onChange={handleChange} placeholder="First Name" className="p-2 border rounded-md" />
                     <input name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Last Name" className="p-2 border rounded-md" />
                 </div>
                 <input name="number" value={formData.number} onChange={handleChange} placeholder="Mobile Number" className="w-full p-2 border rounded-md" />
                 <input name="location" value={formData.location} onChange={handleChange} placeholder="Location (e.g., Kathmandu)" className="w-full p-2 border rounded-md" />
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Update Profile Picture</label>
-                    <input
-                        type="file"
-                        name="profileImage"
-                        onChange={handleFileChange}
-                        accept="image/jpeg,image/jpg,image/png,image/gif"
-                        className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
-                    />
-                    {imagePreview && (
-                        <div className="mt-3">
-                            <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                            <img
-                                src={imagePreview}
-                                alt="Profile preview"
-                                className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
-                            />
-                        </div>
-                    )}
-                </div>
                 <button
                     type="submit"
                     disabled={loading}
@@ -252,7 +264,7 @@ const SettingsTab = ({ user, onProfileUpdate }) => {
                 <h2 className="text-2xl font-semibold mb-4 text-neutral-darkest">Security Settings</h2>
                 <MFASettings />
             </div>
-        </div>
+        </div >
     );
 };
 

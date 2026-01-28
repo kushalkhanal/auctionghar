@@ -143,10 +143,17 @@ UserSchema.index({ 'watchlist.auction': 1 });
 UserSchema.pre('save', function (next) {
     // Only calculate expiry if password or passwordChangedAt is modified
     if (this.isModified('password') || this.isModified('passwordChangedAt')) {
-        const PASSWORD_EXPIRY_DAYS = 90;
+        const PASSWORD_EXPIRY_DAYS = 365; // 1 year
+
+        // Ensure we work with timestamps (numbers), as adding to a Date object results in a string
+        const changeDate = this.passwordChangedAt ? new Date(this.passwordChangedAt).getTime() : Date.now();
+
         this.passwordExpiresAt = new Date(
-            (this.passwordChangedAt || Date.now()) + PASSWORD_EXPIRY_DAYS * 24 * 60 * 60 * 1000
+            changeDate + PASSWORD_EXPIRY_DAYS * 24 * 60 * 60 * 1000
         );
+
+        // Debug log to verify expiry date is correct
+        console.log(`Setting password expiry for ${this.email}: changed=${new Date(changeDate).toISOString()}, expires=${this.passwordExpiresAt.toISOString()}`);
     }
     next();
 });
