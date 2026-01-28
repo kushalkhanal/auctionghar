@@ -30,6 +30,7 @@ import PaymentFailurePage from '../pages/PaymentFailurePage';
 import AddBiddingRoomPage from '../pages/admin/AddBiddingRoomPage';
 import ProtectedRoute from './ProtectedRoute';
 import NotFound from '../pages/NotFound';
+import WatchlistPage from '../pages/WatchlistPage';
 
 const AppRouter = () => (
     <Routes>
@@ -47,6 +48,11 @@ const AppRouter = () => (
             <Route path="/auctions" element={
                 <ProtectedRoute>
                     <Auctions />
+                </ProtectedRoute>
+            } />
+            <Route path="/watchlist" element={
+                <ProtectedRoute>
+                    <WatchlistPage />
                 </ProtectedRoute>
             } />
             <Route path="/bidding-rooms/:id" element={

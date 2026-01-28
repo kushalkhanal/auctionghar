@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ClockIcon, EyeIcon, HeartIcon, UserIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { useWatchlist } from '../context/WatchlistContext';
 
 const calculateTimeLeft = (endTime) => {
     const difference = +new Date(endTime) - +new Date();
@@ -23,8 +24,9 @@ const calculateTimeLeft = (endTime) => {
 const ProductCard = ({ room }) => {
     const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(room.endTime));
     const [isHovered, setIsHovered] = useState(false);
-    const [isLiked, setIsLiked] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const { isInWatchlist, toggleWatchlist } = useWatchlist();
+    const isWatched = isInWatchlist(room._id);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -35,8 +37,8 @@ const ProductCard = ({ room }) => {
 
     const VITE_BACKEND_URL = 'http://localhost:5050';
     const imageUrls = room.imageUrls && room.imageUrls.length > 0
-        ? room.imageUrls.map(url => `${VITE_BACKEND_URL}${url}`)
-        : [`${VITE_BACKEND_URL}/uploads/default-avatar.png`];
+        ? room.imageUrls.map(url => `${VITE_BACKEND_URL}${url} `)
+        : [`${VITE_BACKEND_URL} /uploads/default - avatar.png`];
 
     const isAuctionEnded = timeLeft === "Auction Ended";
     const isUrgent = timeLeft.includes('m') && !timeLeft.includes('d') && !timeLeft.includes('h');
@@ -93,11 +95,11 @@ const ProductCard = ({ room }) => {
                 )}
 
                 {/* Overlay on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'
-                    }`}>
+                <div className={`absolute inset - 0 bg - gradient - to - t from - black / 60 via - transparent to - transparent transition - opacity duration - 300 ${isHovered ? 'opacity-100' : 'opacity-0'
+                    } `}>
                     <div className="absolute bottom-4 left-4 right-4">
                         <Link
-                            to={`/bidding-rooms/${room._id}`}
+                            to={`/ bidding - rooms / ${room._id} `}
                             className="inline-flex items-center justify-center w-full px-4 py-2 bg-white/90 backdrop-blur-sm text-primary font-semibold rounded-full hover:bg-white transition-all duration-300 transform hover:scale-105"
                         >
                             <EyeIcon className="h-4 w-4 mr-2" />
@@ -107,28 +109,29 @@ const ProductCard = ({ room }) => {
                 </div>
 
                 {/* Timer Badge */}
-                <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1 transition-all duration-300 ${isAuctionEnded
-                        ? 'bg-red-500 text-white'
-                        : isUrgent
-                            ? 'bg-orange-500 text-white animate-pulse'
-                            : 'bg-white/90 backdrop-blur-sm text-primary-dark'
+                <div className={`absolute top - 3 right - 3 px - 3 py - 1 rounded - full text - xs font - bold flex items - center space - x - 1 transition - all duration - 300 ${isAuctionEnded
+                    ? 'bg-red-500 text-white'
+                    : isUrgent
+                        ? 'bg-orange-500 text-white animate-pulse'
+                        : 'bg-white/90 backdrop-blur-sm text-primary-dark'
                     }`}>
                     <ClockIcon className="h-4 w-4" />
                     <span>{timeLeft}</span>
                 </div>
 
-                {/* Like Button */}
+                {/* Watchlist Button */}
                 <button
                     onClick={(e) => {
                         e.preventDefault();
-                        setIsLiked(!isLiked);
+                        toggleWatchlist(room._id);
                     }}
-                    className={`absolute top-3 left-3 p-2 rounded-full transition-all duration-300 transform hover:scale-110 ${isLiked
+                    className={`absolute top-3 left-3 p-2 rounded-full transition-all duration-300 transform hover:scale-110 ${isWatched
                             ? 'bg-red-500 text-white'
                             : 'bg-white/90 backdrop-blur-sm text-gray-600 hover:bg-red-500 hover:text-white'
                         }`}
+                    aria-label={isWatched ? 'Remove from watchlist' : 'Add to watchlist'}
                 >
-                    <HeartIcon className={`h-4 w-4 transition-all duration-300 ${isLiked ? 'fill-current' : ''
+                    <HeartIcon className={`h-4 w-4 transition-all duration-300 ${isWatched ? 'fill-current' : ''
                         }`} />
                 </button>
 
@@ -148,14 +151,14 @@ const ProductCard = ({ room }) => {
                             <button
                                 key={index}
                                 onClick={() => goToImage(index)}
-                                className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
-                                        ? 'border-primary'
-                                        : 'border-transparent hover:border-gray-300'
-                                    }`}
+                                className={`flex - shrink - 0 w - 12 h - 12 rounded - lg overflow - hidden border - 2 transition - all ${index === currentImageIndex
+                                    ? 'border-primary'
+                                    : 'border-transparent hover:border-gray-300'
+                                    } `}
                             >
                                 <img
                                     src={url}
-                                    alt={`${room.name} thumbnail ${index + 1}`}
+                                    alt={`${room.name} thumbnail ${index + 1} `}
                                     className="w-full h-full object-cover"
                                 />
                             </button>
@@ -166,7 +169,7 @@ const ProductCard = ({ room }) => {
 
             {/* Content */}
             <div className="p-6">
-                <Link to={`/bidding-rooms/${room._id}`}>
+                <Link to={`/ bidding - rooms / ${room._id} `}>
                     <h3 className="text-lg font-bold text-neutral-darkest group-hover:text-primary transition-colors duration-300 line-clamp-2 mb-2">
                         {room.name}
                     </h3>
@@ -178,7 +181,7 @@ const ProductCard = ({ room }) => {
                         <UserIcon className="h-3 w-3 text-primary" />
                     </div>
                     <p className="text-sm text-neutral-dark">
-                        {room.seller ? `${room.seller.firstName} ${room.seller.lastName}` : 'Unknown Seller'}
+                        {room.seller ? `${room.seller.firstName} ${room.seller.lastName} ` : 'Unknown Seller'}
                     </p>
                 </div>
 
@@ -224,7 +227,7 @@ const ProductCard = ({ room }) => {
 
                 {/* Action Button */}
                 <Link
-                    to={`/bidding-rooms/${room._id}`}
+                    to={`/ bidding - rooms / ${room._id} `}
                     className="mt-4 w-full inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105 group-hover:shadow-primary/25"
                 >
                     {isAuctionEnded ? 'View Results' : 'Place Bid'}
