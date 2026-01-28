@@ -4,6 +4,7 @@ import { PermissionProvider } from "./context/PermissionContext";
 import AppRouter from "./routers/AppRouter";
 import { SocketProvider } from "./context/SocketContext";
 import { ToastProvider } from "./context/ToastContext";
+import { WatchlistProvider } from "./context/WatchlistContext";
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 
 // Replace with your actual reCAPTCHA v3 site key
@@ -23,9 +24,11 @@ function App() {
         <AuthProvider>
           <PermissionProvider>
             <SocketProvider>
-              <BrowserRouter>
-                <AppRouter />
-              </BrowserRouter>
+              <WatchlistProvider> {/* Added WatchlistProvider wrapper */}
+                <BrowserRouter>
+                  <AppRouter />
+                </BrowserRouter>
+              </WatchlistProvider>
             </SocketProvider>
           </PermissionProvider>
         </AuthProvider>

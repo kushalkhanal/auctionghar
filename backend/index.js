@@ -23,6 +23,7 @@ const mfaRoutes = require('./routes/mfaRoutes.js');
 const rbacRoutes = require('./routes/rbacRoutes.js');
 const sessionRoutes = require('./routes/sessionRoutes.js');
 const activityRoutes = require('./routes/activityRoutes.js');
+const watchlistRoutes = require('./routes/watchlistRoutes.js');
 
 // Create Express app
 const app = express();
@@ -100,6 +101,7 @@ app.use('/api/mfa', mfaRoutes);
 app.use('/api/rbac', rbacRoutes);
 app.use('/api/session', sessionRoutes);
 app.use('/api/activity', activityRoutes);
+app.use('/api/watchlist', watchlistRoutes);
 
 // Admin Routes - Protected with authentication
 // RBAC permissions are applied within each route file
