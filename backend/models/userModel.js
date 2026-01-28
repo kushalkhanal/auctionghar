@@ -91,6 +91,27 @@ const UserSchema = new mongoose.Schema(
         profileImage: { type: String, default: '/uploads/default-avatar.png' },
         location: { type: String, default: '', maxLength: 100 },
 
+        // Watchlist - auctions the user is watching/favoriting
+        watchlist: [{
+            auction: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'BiddingRoom',
+                required: true
+            },
+            addedAt: {
+                type: Date,
+                default: Date.now
+            },
+            notifyOnOutbid: {
+                type: Boolean,
+                default: true
+            },
+            notifyOnEnding: {
+                type: Boolean,
+                default: true
+            }
+        }],
+
         // Privacy settings - control what others can see
         privacy: {
             profileVisibility: {
@@ -114,6 +135,9 @@ const UserSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+// Index for efficient watchlist queries
+UserSchema.index({ 'watchlist.auction': 1 });
 
 // Pre-save hook to automatically calculate passwordExpiresAt
 UserSchema.pre('save', function (next) {
