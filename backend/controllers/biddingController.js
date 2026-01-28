@@ -2,6 +2,7 @@ const BiddingRoom = require('../models/biddingRoomModel.js');
 const { createAndEmitNewBidNotification } = require('../services/notificationService.js');
 const Notification = require('../models/notificationModel.js');
 const { logActivity } = require('../utils/activityLogger');
+const { sanitizeObject, sanitizeSearchQuery } = require('../utils/sanitizer');
 
 // --- PUBLIC: GET ALL BIDDING ROOMS (with Search and Pagination) ---
 exports.getAllPublicBiddingRooms = async (req, res) => {
@@ -12,15 +13,16 @@ exports.getAllPublicBiddingRooms = async (req, res) => {
         const skip = (page - 1) * limit;
 
         // 2. Build the filter object based on query parameters
-        const searchQuery = req.query.search
-            ? {
-                $or: [
-                    { name: { $regex: req.query.search, $options: 'i' } },
-                    { description: { $regex: req.query.search, $options: 'i' } },
-                    { tags: { $regex: req.query.search, $options: 'i' } }
-                ]
-            }
-            : {};
+        let searchQuery = {};
+        // Sanitize search query to prevent XSS and injection
+        if (req.query.search) {
+            const sanitizedSearch = sanitizeSearchQuery(req.query.search);
+            searchQuery.$or = [
+                { name: { $regex: sanitizedSearch, $options: 'i' } },
+                { description: { $regex: sanitizedSearch, $options: 'i' } },
+                { tags: { $regex: sanitizedSearch, $options: 'i' } }
+            ];
+        }
 
         // Category filter
         const categoryFilter = req.query.category && req.query.category !== 'all'
@@ -91,162 +93,39 @@ exports.getBiddingRoomById = async (req, res) => {
 
 // --- USER-LEVEL: CREATE A NEW BIDDING ROOM ---
 exports.createBiddingRoom = async (req, res) => {
-
-    // try {
-    //     const { name, description, startingPrice, endTime } = req.body;
-
-    //     // Validate required fields
-    //     if (!name || !description || !startingPrice || !endTime) {
-    //         return res.status(400).json({ message: "Please provide all required fields." });
-    //     }
-
-    //     // Validate images
-    //     if (!req.files || req.files.length === 0) {
-    //         return res.status(400).json({ message: "At least one image is required." });
-    //     }
-
-    //     // Validate maximum 5 images
-    //     if (req.files.length > 5) {
-    //         return res.status(400).json({ message: "Maximum 5 images allowed." });
-    //     }
-
-    //     // Validate image types and sizes
-    //     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    //     const maxSize = 5 * 1024 * 1024; // 5MB
-
-    //     for (let i = 0; i < req.files.length; i++) {
-    //         const file = req.files[i];
-
-    //         if (!allowedTypes.includes(file.mimetype)) {
-    //             return res.status(400).json({ 
-    //                 message: "Only JPEG, PNG, GIF, and WebP images are allowed." 
-    //             });
-    //         }
-
-    //         if (file.size > maxSize) {
-    //             return res.status(400).json({ 
-    //                 message: "Each image must be less than 5MB." 
-    //             });
-    //         }
-    //     }
-
-    //     // Validate auction end time
-    //     const endTimeDate = new Date(endTime);
-    //     const currentDate = new Date();
-    //     const oneMonthFromNow = new Date();
-    //     oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-
-    //     // Check if end time is in the future
-    //     if (endTimeDate <= currentDate) {
-    //         return res.status(400).json({ message: "Auction end time must be in the future." });
-    //     }
-
-    //     // Check if end time is not more than one month from now
-    //     if (endTimeDate > oneMonthFromNow) {
-    //         return res.status(400).json({ message: "Auction end time cannot be more than one month from now." });
-    //     }
-
-    //     // Process image URLs
-    //     const imageUrls = req.files.map(file => `/${file.path.replace(/\\/g, "/")}`);
-
-    //     const newRoom = new BiddingRoom({
-    //         name, 
-    //         description, 
-    //         startingPrice, 
-    //         endTime, 
-    //         imageUrls,
-    //         seller: req.user.id
-    //     });
-
-    //     const createdRoom = await newRoom.save();
-
-    //     // Populate seller information for response
-    //     await createdRoom.populate('seller', 'firstName lastName');
-
-    //     res.status(201).json({
-    //         message: "Bidding room created successfully!",
-    //         room: createdRoom
-    //     });
-    // } catch (error) {
-    //     console.error("CREATE ROOM ERROR:", error);
-    //     res.status(500).json({ message: "Server Error", error: error.message });
-    // }
-
-
-
     try {
-        const { name, description, startingPrice, endTime } = req.body;
+        // Sanitize all user inputs to prevent XSS attacks
+        const sanitizedData = sanitizeObject(req.body, {
+            name: { type: 'string', maxLength: 100 },
+            description: { type: 'string', maxLength: 2000 },
+            startingPrice: { type: 'number' },
+            category: { type: 'string', maxLength: 50 },
+            tags: { type: 'array', maxItems: 10, itemMaxLength: 20 },
+            endTime: { type: 'date' }
+        });
 
-        // --- STEP 1: VALIDATE ONLY THE TEXT FIELDS ---
-        if (!name || !description || !startingPrice || !endTime) {
-            return res.status(400).json({ message: "Please provide all required fields." });
-        }
-
-        // --- STEP 2: REMOVE ALL IMAGE VALIDATION LOGIC ---
-        // We are commenting out all checks related to req.files, mimetype, and size.
-        /*
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ message: "At least one image is required." });
-        }
-        if (req.files.length > 5) {
-            return res.status(400).json({ message: "Maximum 5 images allowed." });
-        }
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        for (let i = 0; i < req.files.length; i++) {
-            const file = req.files[i];
-            if (!allowedTypes.includes(file.mimetype)) {
-                return res.status(400).json({ 
-                    message: "Only JPEG, PNG, GIF, and WebP images are allowed." 
-                });
-            }
-            if (file.size > maxSize) {
-                return res.status(400).json({ 
-                    message: "Each image must be less than 5MB." 
-                });
-            }
-        }
-        */
-
-        // --- STEP 3: VALIDATE AUCTION END TIME (No change here) ---
-        const endTimeDate = new Date(endTime);
-        const currentDate = new Date();
-        const oneMonthFromNow = new Date();
-        oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-
-        if (endTimeDate <= currentDate) {
-            return res.status(400).json({ message: "Auction end time must be in the future." });
-        }
-
-        if (endTimeDate > oneMonthFromNow) {
-            return res.status(400).json({ message: "Auction end time cannot be more than one month from now." });
-        }
-
-        // --- STEP 4: HARDCODE THE IMAGE URLS ---
-        // Instead of processing req.files, we assign a default array.
-        // Make sure this path points to an actual image you have in your uploads folder.
-        const imageUrls = ['/uploads/products/productImages-1754067384965.jpg'];
-
-        // --- STEP 5: CREATE AND SAVE THE NEW ROOM (No change here) ---
+        // Create new bidding room with sanitized data
         const newRoom = new BiddingRoom({
-            name,
-            description,
-            startingPrice,
-            endTime,
-            imageUrls, // This now uses our hardcoded array
-            seller: req.user.id
+            name: sanitizedData.name,
+            description: sanitizedData.description,
+            startingPrice: sanitizedData.startingPrice,
+            currentPrice: sanitizedData.startingPrice,
+            endTime: sanitizedData.endTime,
+            category: sanitizedData.category || 'Other',
+            tags: sanitizedData.tags || [],
+            seller: req.user.id,
+            imageUrls: req.files ? req.files.map(file => `/${file.path.replace(/\\/g, "/")}`) : []
         });
 
         const createdRoom = await newRoom.save();
-
         await createdRoom.populate('seller', 'firstName lastName');
 
-        // Log auction creation
+        // Log activity
         await logActivity({
             userId: req.user.id,
             action: 'auction_created',
             category: 'auction',
-            metadata: { auctionName: name, startingPrice, endTime },
+            metadata: { auctionName: sanitizedData.name, startingPrice: sanitizedData.startingPrice, endTime: sanitizedData.endTime },
             ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
             userAgent: req.headers['user-agent'],
             status: 'success',
@@ -255,12 +134,17 @@ exports.createBiddingRoom = async (req, res) => {
         });
 
         res.status(201).json({
+            success: true,
             message: "Bidding room created successfully!",
             room: createdRoom
         });
     } catch (error) {
         console.error("CREATE ROOM ERROR:", error);
-        res.status(500).json({ message: "Server Error", error: error.message });
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message
+        });
     }
 };
 
