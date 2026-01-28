@@ -226,8 +226,8 @@ const ProductDetailPage = () => {
                                         key={index}
                                         onClick={() => goToImage(index)}
                                         className={`relative rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${selectedImageIndex === index
-                                                ? 'border-primary ring-2 ring-primary/20'
-                                                : 'border-gray-200 hover:border-gray-300'
+                                            ? 'border-primary ring-2 ring-primary/20'
+                                            : 'border-gray-200 hover:border-gray-300'
                                             }`}
                                     >
                                         <img

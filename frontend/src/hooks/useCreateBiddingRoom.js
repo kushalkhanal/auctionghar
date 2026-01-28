@@ -28,6 +28,7 @@ export const useCreateBiddingRoom = () => {
         submissionData.append('description', formData.description);
         submissionData.append('startingPrice', formData.startingPrice);
         submissionData.append('endTime', formData.endTime);
+        submissionData.append('category', formData.category || 'Other');
 
         // Loop through the FileList and append each file.
         // The key 'productImages' MUST match the backend multer middleware.
@@ -37,20 +38,24 @@ export const useCreateBiddingRoom = () => {
 
         try {
             // --- Make the API call ---
-            await axios.post('/api/admin/bidding-rooms', submissionData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data', // This header is essential
-                },
-            });
-            
+            await axios.post('/api/bidding-rooms', submissionData);
+
             // If the API call is successful, navigate to the management page.
             navigate('/admin/bidding-rooms');
 
         } catch (err) {
             // If there's an error, set the error message.
-            const errorMessage = err.response?.data?.message || 'Failed to create the bidding room.';
+            console.error("Create Room Error:", err);
+
+            let errorMessage = err.response?.data?.message || 'Failed to create the bidding room.';
+
+            // Should backend return specific field errors (express-validator style)
+            if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+                const detailedErrors = err.response.data.errors.map(e => `${e.param || e.field}: ${e.message}`).join('\n');
+                errorMessage = `${errorMessage}\n${detailedErrors}`;
+            }
+
             setError(errorMessage);
-            console.error(err);
         } finally {
             // In all cases, stop loading.
             setLoading(false);

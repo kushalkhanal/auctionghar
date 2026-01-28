@@ -69,7 +69,9 @@ app.use(helmet({
     // X-Content-Type-Options
     noSniff: true,
     // X-XSS-Protection
-    xssFilter: true
+    xssFilter: true,
+    // Allow cross-origin resource sharing for images (Fixes ERR_BLOCKED_BY_RESPONSE)
+    crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 // Body parser
@@ -79,8 +81,18 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Cookie parser
 app.use(cookieParser());
 
-// Static folder for uploads
-app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
+// Debug logging for static files
+app.use('/uploads', (req, res, next) => {
+    const resolvedPath = path.join(__dirname, 'uploads', req.url);
+    console.log(`[Static] REQ: ${req.url}`);
+    console.log(`[Static] PATH: ${resolvedPath}`);
+
+    res.on('finish', () => {
+        console.log(`[Static] RES: ${res.statusCode} ${res.statusMessage}`);
+    });
+
+    next();
+}, express.static(path.join(__dirname, 'uploads')));
 
 // Public Routes
 app.use('/api/auth', authRoutes);

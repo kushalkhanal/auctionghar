@@ -85,7 +85,7 @@ const validateAuctionCreate = [
         .trim()
         .notEmpty().withMessage('Auction name is required')
         .isLength({ min: 3, max: 100 }).withMessage('Name must be 3-100 characters')
-        .matches(/^[a-zA-Z0-9\s\-.,!?()&]+$/).withMessage('Name contains invalid characters'),
+        .matches(/^[a-zA-Z0-9\s\-.,!?()&'"@#]+$/).withMessage('Name contains invalid characters'),
 
     body('description')
         .trim()
@@ -268,6 +268,8 @@ const checkValidation = (req, res, next) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
+        console.log("VALIDATION ERRORS:", JSON.stringify(errors.array(), null, 2));
+        console.log("REQ BODY:", req.body);
         return res.status(400).json({
             success: false,
             message: 'Validation failed',

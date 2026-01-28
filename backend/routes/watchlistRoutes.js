@@ -25,15 +25,15 @@ router.get('/', getWatchlist);
 router.post('/', validateWatchlistAdd, checkValidation, addToWatchlist);
 
 // Check if auction is in watchlist with ID validation
-router.get('/check/:auctionId', validateMongoId, checkValidation, isInWatchlist);
+router.get('/check/:id', validateMongoId, checkValidation, isInWatchlist);
 
 // Clear all ended auctions from watchlist
 router.delete('/clear/ended', clearEndedAuctions);
 
 // Remove auction from watchlist with ID validation
-router.delete('/:auctionId', validateMongoId, checkValidation, removeFromWatchlist);
+router.delete('/:id', validateMongoId, checkValidation, removeFromWatchlist);
 
 // Update notification settings for a watched auction with ID validation
-router.patch('/:auctionId/notifications', validateMongoId, checkValidation, updateNotificationSettings);
+router.patch('/:id/notifications', validateMongoId, checkValidation, updateNotificationSettings);
 
 module.exports = router;

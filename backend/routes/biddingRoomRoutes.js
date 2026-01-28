@@ -48,7 +48,7 @@ router.get('/:id', cacheMiddleware(CACHE_TTL.AUCTION_DETAIL), validateMongoId, c
 
 // POST /api/bidding-rooms/ - Creates a new listing for the logged-in user
 // Requires BIDDING_CREATE permission with validation
-router.post('/', protect, hasPermission(PERMISSIONS.BIDDING_CREATE), validateAuctionCreate, checkValidation, productImagesUpload, createBiddingRoom);
+router.post('/', protect, hasPermission(PERMISSIONS.BIDDING_CREATE), productImagesUpload, validateAuctionCreate, checkValidation, createBiddingRoom);
 
 // POST /api/bidding-rooms/:id/bid - Places a bid on a specific auction with validation
 router.post('/:id/bid', protect, validateBid, checkValidation, placeBid);

@@ -27,6 +27,7 @@ export const useCreateListing = () => {
         submissionData.append('description', formData.description);
         submissionData.append('startingPrice', formData.startingPrice);
         submissionData.append('endTime', formData.endTime);
+        submissionData.append('category', formData.category || 'Other');
 
         for (let i = 0; i < productImages.length; i++) {
             submissionData.append('productImages', productImages[i]);
@@ -37,8 +38,14 @@ export const useCreateListing = () => {
             toast.success('Auction created successfully!');
             navigate('/profile');
         } catch (err) {
-            // This line correctly grabs the specific error message from the backend
-            const errorMessage = err.response?.data?.message || 'Failed to create your listing.';
+            console.error("Create Listing Error:", err);
+            let errorMessage = err.response?.data?.message || 'Failed to create your listing.';
+
+            if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+                const detailedErrors = err.response.data.errors.map(e => `${e.param || e.field}: ${e.message}`).join('\n');
+                errorMessage = `${errorMessage}\n${detailedErrors}`;
+            }
+
             setError(errorMessage);
             toast.error(errorMessage);
         } finally {

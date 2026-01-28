@@ -70,7 +70,7 @@ exports.addToWatchlist = async (req, res) => {
 // @access  Private
 exports.removeFromWatchlist = async (req, res) => {
     try {
-        const { auctionId } = req.params;
+        const { id: auctionId } = req.params;
         const userId = req.user.id;
 
         const user = await User.findById(userId);
@@ -155,7 +155,7 @@ exports.getWatchlist = async (req, res) => {
 // @access  Private
 exports.isInWatchlist = async (req, res) => {
     try {
-        const { auctionId } = req.params;
+        const { id: auctionId } = req.params;
         const userId = req.user.id;
 
         const user = await User.findById(userId);
@@ -176,7 +176,7 @@ exports.isInWatchlist = async (req, res) => {
 // @access  Private
 exports.updateNotificationSettings = async (req, res) => {
     try {
-        const { auctionId } = req.params;
+        const { id: auctionId } = req.params;
         const { notifyOnOutbid, notifyOnEnding } = req.body;
         const userId = req.user.id;
 

@@ -306,7 +306,10 @@ const CreateListingPage = () => {
                                                 <XMarkIcon className="h-4 w-4" />
                                             </button>
                                             <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 rounded-b-lg">
-                                                {(image.file.size / 1024 / 1024).toFixed(1)}MB
+                                                {image.file.size < 1024 * 1024
+                                                    ? `${(image.file.size / 1024).toFixed(1)} KB`
+                                                    : `${(image.file.size / 1024 / 1024).toFixed(1)} MB`
+                                                }
                                             </div>
                                         </div>
                                     ))}
@@ -321,7 +324,7 @@ const CreateListingPage = () => {
                     </div>
 
                     {/* Display any error message returned from the hook */}
-                    {error && <p className="text-red-500 text-center font-semibold">{error}</p>}
+                    {error && <p className="text-red-500 text-center font-semibold whitespace-pre-wrap">{error}</p>}
 
                     <button
                         type="submit"

@@ -13,11 +13,11 @@ const AddBiddingRoomPage = () => {
         const now = new Date();
         const oneMonthFromNow = new Date();
         oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-        
+
         // Format for datetime-local input (YYYY-MM-DDTHH:MM)
         const minDate = now.toISOString().slice(0, 16);
         const maxDate = oneMonthFromNow.toISOString().slice(0, 16);
-        
+
         return { minDate, maxDate };
     };
 
@@ -27,6 +27,7 @@ const AddBiddingRoomPage = () => {
         description: '',
         startingPrice: '100', // Set a default starting price
         endTime: '',
+        category: 'Other',
     });
     // Enhanced state for multiple images
     const [productImages, setProductImages] = useState([]);
@@ -34,25 +35,25 @@ const AddBiddingRoomPage = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        
+
         // Special validation for endTime
         if (name === 'endTime') {
             const selectedDate = new Date(value);
             const currentDate = new Date();
             const oneMonthFromNow = new Date();
             oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-            
+
             if (selectedDate > oneMonthFromNow) {
                 alert('Auction end time cannot be more than one month from now.');
                 return;
             }
-            
+
             if (selectedDate <= currentDate) {
                 alert('Auction end time must be in the future.');
                 return;
             }
         }
-        
+
         setFormData({ ...formData, [name]: value });
     };
 
@@ -67,11 +68,11 @@ const AddBiddingRoomPage = () => {
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            
+
             if (!allowedTypes.includes(file.type)) {
                 return 'Only JPEG, PNG, GIF, and WebP images are allowed.';
             }
-            
+
             if (file.size > maxSize) {
                 return 'Each image must be less than 5MB.';
             }
@@ -83,20 +84,20 @@ const AddBiddingRoomPage = () => {
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
         const error = validateImages(files);
-        
+
         if (error) {
             setImageErrors(error);
             return;
         }
 
         setImageErrors('');
-        
+
         // Create preview URLs for the images
         const imageFiles = files.map(file => ({
             file,
             preview: URL.createObjectURL(file)
         }));
-        
+
         setProductImages(imageFiles);
     };
 
@@ -117,20 +118,20 @@ const AddBiddingRoomPage = () => {
 
         const files = Array.from(e.dataTransfer.files);
         const error = validateImages(files);
-        
+
         if (error) {
             setImageErrors(error);
             return;
         }
 
         setImageErrors('');
-        
+
         // Create preview URLs for the images
         const imageFiles = files.map(file => ({
             file,
             preview: URL.createObjectURL(file)
         }));
-        
+
         setProductImages(imageFiles);
     };
 
@@ -143,7 +144,7 @@ const AddBiddingRoomPage = () => {
     // The submit handler is now very simple.
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         if (productImages.length === 0) {
             setImageErrors('At least one image is required.');
             return;
@@ -153,7 +154,7 @@ const AddBiddingRoomPage = () => {
         const files = productImages.map(img => img.file);
         const fileList = new DataTransfer();
         files.forEach(file => fileList.items.add(file));
-        
+
         // 3. It just calls the function from our hook, passing the state.
         createRoom(formData, fileList.files);
     };
@@ -172,40 +173,55 @@ const AddBiddingRoomPage = () => {
                         <textarea name="description" id="description" onChange={handleChange} value={formData.description} rows="4" className="mt-1 w-full p-3 border rounded-md" required />
                     </div>
                     <div>
+                        <label htmlFor="category" className="block text-sm font-semibold text-gray-700">Category</label>
+                        <select name="category" id="category" onChange={handleChange} value={formData.category} className="mt-1 w-full p-3 border rounded-md" required>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Fashion">Fashion</option>
+                            <option value="Home & Garden">Home & Garden</option>
+                            <option value="Sports & Outdoors">Sports & Outdoors</option>
+                            <option value="Collectibles">Collectibles</option>
+                            <option value="Art">Art</option>
+                            <option value="Jewelry">Jewelry</option>
+                            <option value="Vehicles">Vehicles</option>
+                            <option value="Books & Media">Books & Media</option>
+                            <option value="Toys & Games">Toys & Games</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
                         <label htmlFor="startingPrice" className="block text-sm font-semibold text-gray-700">Starting Price (NPR)</label>
                         <input type="number" name="startingPrice" id="startingPrice" onChange={handleChange} value={formData.startingPrice} className="mt-1 w-full p-3 border rounded-md" min="1" required />
                     </div>
                     <div>
                         <label htmlFor="endTime" className="block text-sm font-semibold text-gray-700">Auction End Time</label>
-                        <input 
-                            type="datetime-local" 
-                            name="endTime" 
-                            id="endTime" 
-                            onChange={handleChange} 
-                            value={formData.endTime} 
+                        <input
+                            type="datetime-local"
+                            name="endTime"
+                            id="endTime"
+                            onChange={handleChange}
+                            value={formData.endTime}
                             min={getMinMaxDates().minDate}
                             max={getMinMaxDates().maxDate}
-                            className="mt-1 w-full p-3 border rounded-md" 
-                            required 
+                            className="mt-1 w-full p-3 border rounded-md"
+                            required
                         />
                         <p className="text-sm text-gray-500 mt-1">
                             Auction duration must be between now and one month from today.
                         </p>
                     </div>
-                    
+
                     {/* Enhanced Image Upload Section */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                             Product Images (up to 5)
                         </label>
-                        
+
                         {/* Drag & Drop Area */}
                         <div
-                            className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                                dragActive 
-                                    ? 'border-primary bg-primary/5' 
-                                    : 'border-gray-300 hover:border-primary/50'
-                            }`}
+                            className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${dragActive
+                                ? 'border-primary bg-primary/5'
+                                : 'border-gray-300 hover:border-primary/50'
+                                }`}
                             onDragEnter={handleDrag}
                             onDragLeave={handleDrag}
                             onDragOver={handleDrag}
@@ -219,7 +235,7 @@ const AddBiddingRoomPage = () => {
                                 onChange={handleFileChange}
                                 className="hidden"
                             />
-                            
+
                             <div className="space-y-4">
                                 <PhotoIcon className="mx-auto h-12 w-12 text-gray-400" />
                                 <div>
@@ -263,7 +279,10 @@ const AddBiddingRoomPage = () => {
                                                 <XMarkIcon className="h-4 w-4" />
                                             </button>
                                             <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 rounded-b-lg">
-                                                {(image.file.size / 1024 / 1024).toFixed(1)}MB
+                                                {image.file.size < 1024 * 1024
+                                                    ? `${(image.file.size / 1024).toFixed(1)} KB`
+                                                    : `${(image.file.size / 1024 / 1024).toFixed(1)} MB`
+                                                }
                                             </div>
                                         </div>
                                     ))}
@@ -276,13 +295,13 @@ const AddBiddingRoomPage = () => {
                             <p className="text-red-500 text-sm mt-2">{imageErrors}</p>
                         )}
                     </div>
-                    
+
                     {/* Display any error message from the hook */}
-                    {error && <p className="text-red-500 text-center font-semibold">{error}</p>}
-                    
-                    <button 
-                        type="submit" 
-                        disabled={loading || productImages.length === 0} 
+                    {error && <p className="text-red-500 text-center font-semibold whitespace-pre-wrap">{error}</p>}
+
+                    <button
+                        type="submit"
+                        disabled={loading || productImages.length === 0}
                         className="w-full py-3 font-semibold text-white bg-primary rounded-lg hover:bg-primary-dark disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                     >
                         {loading ? 'Creating...' : 'Create Bidding Room'}
